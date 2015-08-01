@@ -69,6 +69,8 @@ NSString *const LBDeviceInfoManagerSensorValueKey = @"LBDeviceInfoManagerSensorV
 @property(nonatomic,assign) BOOL gravReady;
 @property(nonatomic,assign) BOOL magReady;
 
+@property(nonatomic,assign) UIBackgroundTaskIdentifier bgTaskID;
+
 @end
 
 @implementation LBDeviceInfoManager
@@ -273,10 +275,25 @@ NSString *const LBDeviceInfoManagerSensorValueKey = @"LBDeviceInfoManagerSensorV
 
 - (void)startCoreMotionMonitorClearData:(BOOL)clear {
     
-    
-    if (([UIApplication sharedApplication].applicationState == UIApplicationStateBackground)) {
-        [self.scheduler.bgTask beginNewBackgroundTask];
-    }
+//    
+//    UIApplication* application = [UIApplication sharedApplication];
+//    
+//    if ([application applicationState] == UIApplicationStateBackground) {
+//        
+//        if (self.bgTaskID != UIBackgroundTaskInvalid) {
+//            [[UIApplication sharedApplication] endBackgroundTask:self.bgTaskID];
+//        }
+//        
+//        UIBackgroundTaskIdentifier bgTaskId = UIBackgroundTaskInvalid;
+//        if([application respondsToSelector:@selector(beginBackgroundTaskWithExpirationHandler:)]){
+//            bgTaskId = [application beginBackgroundTaskWithExpirationHandler:^{
+//                NSLog(@"background task %lu expired", (unsigned long)bgTaskId);
+//                [application endBackgroundTask:bgTaskId];
+//            }];
+//            self.bgTaskID = bgTaskId;
+//        }
+//    }
+
     
     if (clear) {
         self.coreMotionData = [NSMutableDictionary dictionary];
@@ -472,7 +489,10 @@ NSString *const LBDeviceInfoManagerSensorValueKey = @"LBDeviceInfoManagerSensorV
 - (void)uploadDeviveInfoToServer
 {
     NSLog(@"upload device info to server ");
-    
+    if ([[UIApplication sharedApplication] applicationState] == UIApplicationStateBackground) {
+//        [self.deviceInfoManager startCoreMotionMonitorClearData:YES];
+        return;
+    }
     NSMutableArray *sensorRecordsToUpload = [NSMutableArray array];
     
     [self.coreMotionData enumerateKeysAndObjectsUsingBlock:^(NSString * key, NSArray* obj, BOOL *stop) {

@@ -69,6 +69,7 @@
 		96345C291B6CDBBF001B7DB9 /* LBBackgroundTaskManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 96345C261B6CDBBF001B7DB9 /* LBBackgroundTaskManager.m */; };
 		96345C2A1B6CDBBF001B7DB9 /* LBDataCollectionScheduler.m in Sources */ = {isa = PBXBuildFile; fileRef = 96345C281B6CDBBF001B7DB9 /* LBDataCollectionScheduler.m */; };
 		96345C2E1B6CDBD7001B7DB9 /* LBLocationTracker.m in Sources */ = {isa = PBXBuildFile; fileRef = 96345C2D1B6CDBD7001B7DB9 /* LBLocationTracker.m */; };
+		9688E0451B6D1DF30007A028 /* MapKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9688E0441B6D1DF30007A028 /* MapKit.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -172,6 +173,7 @@
 		96345C281B6CDBBF001B7DB9 /* LBDataCollectionScheduler.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = LBDataCollectionScheduler.m; sourceTree = "<group>"; };
 		96345C2C1B6CDBD7001B7DB9 /* LBLocationTracker.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LBLocationTracker.h; sourceTree = "<group>"; };
 		96345C2D1B6CDBD7001B7DB9 /* LBLocationTracker.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = LBLocationTracker.m; sourceTree = "<group>"; };
+		9688E0441B6D1DF30007A028 /* MapKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MapKit.framework; path = System/Library/Frameworks/MapKit.framework; sourceTree = SDKROOT; };
 		E9ED9A7D37514874BEF21452 /* libPods.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libPods.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		FD51F94CC620DFFF4A6A96A6 /* Pods.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = Pods.release.xcconfig; path = "Pods/Target Support Files/Pods/Pods.release.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -183,6 +185,7 @@
 			files = (
 				868735C61831A1E700C0CCFA /* CoreGraphics.framework in Frameworks */,
 				868735C81831A1E700C0CCFA /* UIKit.framework in Frameworks */,
+				9688E0451B6D1DF30007A028 /* MapKit.framework in Frameworks */,
 				868735C41831A1E700C0CCFA /* Foundation.framework in Frameworks */,
 				9339C4B352D241B0BA3026EF /* libPods.a in Frameworks */,
 			);
@@ -270,6 +273,7 @@
 		868735C21831A1E700C0CCFA /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				9688E0441B6D1DF30007A028 /* MapKit.framework */,
 				868735C31831A1E700C0CCFA /* Foundation.framework */,
 				868735C51831A1E700C0CCFA /* CoreGraphics.framework */,
 				868735C71831A1E700C0CCFA /* UIKit.framework */,
@@ -503,6 +507,9 @@
 					868735BF1831A1E700C0CCFA = {
 						SystemCapabilities = {
 							com.apple.BackgroundModes = {
+								enabled = 1;
+							};
+							com.apple.Maps.iOS = {
 								enabled = 1;
 							};
 						};

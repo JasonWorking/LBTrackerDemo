@@ -1,0 +1,28 @@
+2015-08-01 14:21:06.162 BgTracker[6589:792677] installation : {
+    "__type" = Pointer;
+    className = "_Installation";
+    objectId = QtHOGwbY7R36hVRW7h357iLzTTUKiTp6;
+}
+
+
+QtHOGwbY7R36hVRW7h357iLzTTUKiTp6
+
+
+
+simpleWeather
+{
+    "__type" = Pointer;
+    className = "_Installation";
+    objectId = xDugHBL9tFDDTesiNcJz7ayObmvaTHXP;
+}
+
+
+
+
+
+location{
+
+    "__type" = Pointer;
+    className = "_Installation";
+    objectId = 8MmWmWEKofx1UssQMIEPiNrx4YOOtqmK;
+}

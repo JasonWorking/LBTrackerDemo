@@ -15,7 +15,7 @@
 #import "LBDataCenter.h"
 
 NSString *const LBHTTPClientErrorDemain = @"LBHTTPClient.errorDomain";
-static NSString *const kLBSenzLeancloudHostURlString  = @"https://api.leancloud.cn";
+static NSString *const kLBSenzLeancloudHostURlString  = @"http://api.trysenz.com";
 static NSString *const kLBSenzAuthIDString = @"5548eb2ade57fc001b000001938f317f306f4fc254cdc7becb73821a";
 
 
@@ -187,7 +187,7 @@ NSError * ErrorWithType(HTTPClientErrorType type)
                             @"location":[locationRecord JSONRepresentation]};
     
     __weak typeof(self) weakSelf = self;
-    [self POST:@"1.1/classes/Log"
+    [self POST:@"/data/Log"
     parameters:param
        success:^(AFHTTPRequestOperation *operation, id responseObject) {
            NSLog(@"success ");
@@ -251,7 +251,7 @@ NSError * ErrorWithType(HTTPClientErrorType type)
                                     }};
     
     __weak typeof(self) weakSelf = self;
-    [self POST:@"1.1/classes/Log"
+    [self POST:@"/data/Log"
     parameters:param
        success:^(AFHTTPRequestOperation *operation, id responseObject) {
            NSLog(@"success ");

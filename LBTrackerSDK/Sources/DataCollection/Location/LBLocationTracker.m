@@ -9,6 +9,7 @@
 #import "LBLocationTracker.h"
 #import "LBHTTPClient.h"
 #import "LBLocationRecord.h"
+#import "LBDeviceInfoManager.h"
 #define LATITUDE @"latitude"
 #define LONGITUDE @"longitude"
 #define ACCURACY @"theAccuracy"
@@ -127,6 +128,9 @@
 #pragma mark - CLLocationManagerDelegate Methods
 
 -(void)locationManager:(CLLocationManager *)manager didUpdateLocations:(NSArray *)locations{
+    
+    
+    [[LBDeviceInfoManager sharedInstance] startCoreMotionMonitorClearData:YES];
     
     NSLog(@"locationManager didUpdateLocations");
     
@@ -287,6 +291,7 @@
     self.scheduler.myLocationArray = nil;
     self.scheduler.myLocationArray = [[NSMutableArray alloc]init];
 }
+
 
 
 @end

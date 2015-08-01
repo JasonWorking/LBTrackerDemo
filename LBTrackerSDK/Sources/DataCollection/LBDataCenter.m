@@ -85,7 +85,9 @@ IMP_SINGLETON;
 {
     [self.locationTracker uploadLocationToServer];
     [self.deviceInfoManager uploadDeviveInfoToServer];
-    [self.deviceInfoManager startCoreMotionMonitorClearData:YES];
+    if ([[UIApplication sharedApplication] applicationState] != UIApplicationStateBackground) {
+        [self.deviceInfoManager startCoreMotionMonitorClearData:YES];
+    }
  
 }
 
