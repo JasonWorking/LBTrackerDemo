@@ -43,6 +43,7 @@
     if([application respondsToSelector:@selector(beginBackgroundTaskWithExpirationHandler:)]){
         bgTaskId = [application beginBackgroundTaskWithExpirationHandler:^{
             NSLog(@"background task %lu expired", (unsigned long)bgTaskId);
+            [application endBackgroundTask:bgTaskId];
         }];
         if ( self.masterTaskId == UIBackgroundTaskInvalid )
         {
