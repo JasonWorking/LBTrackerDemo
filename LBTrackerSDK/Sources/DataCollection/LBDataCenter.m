@@ -11,6 +11,8 @@
 #import "LBDeviceInfoManager.h"
 #import "LBDataStore.h"
 #import "LBLocationTracker.h"
+#import <CoreMotion/CMMotionActivityManager.h>
+#import "CMMotionActivity+JSON.h"
 
 @interface LBDataCenter ()/*<LBLocationCenterDelegate>*/
 @property (nonatomic, strong) NSOperationQueue *queue;
@@ -18,6 +20,7 @@
 @property (nonatomic, strong) LBDataStore *dataStore;
 @property (nonatomic, strong) LBLocationTracker *locationTracker;
 @property (nonatomic, strong) LBDeviceInfoManager *deviceInfoManager;
+@property (nonatomic, strong) CMMotionActivityManager *cmaManager;
 @end
 
 @implementation LBDataCenter
@@ -38,6 +41,7 @@ IMP_SINGLETON;
 {
     if (self = [super init]) {
         _dataStore = [[LBDataStore alloc] init];
+        _cmaManager = [[CMMotionActivityManager alloc] init];
         _locationTracker = [[LBLocationTracker alloc] init];
         _deviceInfoManager = [LBDeviceInfoManager sharedInstance];
         _queue = [[NSOperationQueue alloc] init];
@@ -63,7 +67,7 @@ IMP_SINGLETON;
     }
     
     [self.locationTracker startLocationTrackingWithTimeInterval:MAX(time, 60)];
-    [self.deviceInfoManager startCoreMotionMonitorClearData:YES];
+//    [self.deviceInfoManager startCoreMotionMonitorClearData:YES];
     // Fire data upload
     self.dataCollectionTimer = [NSTimer scheduledTimerWithTimeInterval:MAX(time, 60)
                                                         target:self
@@ -77,17 +81,32 @@ IMP_SINGLETON;
 {
     [self.dataCollectionTimer invalidate];
     [self.locationTracker stopLocationTracking];
-    [self.deviceInfoManager stopCoreMotionMonitorClearData:YES];
+//    [self.deviceInfoManager stopCoreMotionMonitorClearData:YES];
 }
 
 
 - (void)fireDataUpload
 {
     [self.locationTracker uploadLocationToServer];
-    [self.deviceInfoManager uploadDeviveInfoToServer];
-    if ([[UIApplication sharedApplication] applicationState] != UIApplicationStateBackground) {
-        [self.deviceInfoManager startCoreMotionMonitorClearData:YES];
-    }
+//    [self.deviceInfoManager uploadDeviveInfoToServer];
+    
+//    if ([CMMotionActivityManager isActivityAvailable]) {
+//        [self.cmaManager queryActivityStartingFromDate:[NSDate dateWithTimeInterval:-(60) sinceDate:[NSDate date]]
+//                                                toDate:[NSDate date]
+//                                               toQueue:self.queue
+//                                           withHandler:^(NSArray *activities, NSError *error) {
+//                                               
+//                                               [activities enumerateObjectsUsingBlock:^(CMMotionActivity* obj, NSUInteger idx, BOOL *stop) {
+//                                                   [obj logToFilePath:nil];
+//                                               }];
+//                                               NSLog(@"activeties : %@", activities);
+//        }];
+//    }
+    
+    
+//    if ([[UIApplication sharedApplication] applicationState] != UIApplicationStateBackground) {
+//        [self.deviceInfoManager startCoreMotionMonitorClearData:YES];
+//    }
  
 }
 

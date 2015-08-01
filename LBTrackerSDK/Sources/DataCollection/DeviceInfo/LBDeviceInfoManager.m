@@ -338,6 +338,9 @@ NSString *const LBDeviceInfoManagerSensorValueKey = @"LBDeviceInfoManagerSensorV
     if (!self.motionManager.deviceMotionAvailable) {
         return;
     }
+    
+    
+    [self.motionManager startDeviceMotionUpdates];
     self.motionManager.deviceMotionUpdateInterval = UPDATE_INTERVAL;
     [self.motionManager startDeviceMotionUpdatesToQueue:[NSOperationQueue currentQueue] withHandler:^(CMDeviceMotion *motion, NSError *error) {
         if (error == nil) {

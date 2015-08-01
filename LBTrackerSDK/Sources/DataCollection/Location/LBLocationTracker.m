@@ -9,14 +9,45 @@
 #import "LBLocationTracker.h"
 #import "LBHTTPClient.h"
 #import "LBLocationRecord.h"
-#import "LBDeviceInfoManager.h"
+#import "LBSenserRecord.h"
+
+//#import "LBDeviceInfoManager.h"
+#import <CoreMotion/CoreMotion.h>
 #define LATITUDE @"latitude"
 #define LONGITUDE @"longitude"
 #define ACCURACY @"theAccuracy"
 
 #define IS_OS_8_OR_LATER ([[[UIDevice currentDevice] systemVersion] floatValue] >= 8.0)
+/**重力*/
+#define GravityKey           @"Gravity"
 
-@implementation LBLocationTracker
+/**加速度*/
+#define AccelerometerKey     @"Accelerometer"
+
+/**陀螺仪*/
+#define GyroscopeKey         @"Gyroscope"
+
+/**磁场*/
+#define MagnetometerKey      @"Magnetometer"
+
+/**最多的次数*/
+#define MAX_NUMBER           10
+
+/**间隔秒数*/
+#define UPDATE_INTERVAL      3
+
+//
+//@interface LBLocationTracker ()
+//
+//
+//@property (nonatomic, strong)   CMMotionManager * motionManager;
+//
+//@end
+
+@implementation LBLocationTracker{
+    CMMotionManager *motionManager;
+    NSMutableDictionary *coremotionData;
+}
 
 + (CLLocationManager *)sharedLocationManager {
 	static CLLocationManager *_locationManager;
@@ -36,6 +67,11 @@
         self.scheduler = [LBDataCollectionScheduler sharedInstance];
         self.scheduler.myLocationArray = [[NSMutableArray alloc]init];
         self.dataColletionInterval = 1*60;
+        coremotionData = [NSMutableDictionary dictionary];
+        [coremotionData setObject:[NSMutableArray array] forKey:GravityKey];
+        [coremotionData setObject:[NSMutableArray array] forKey:AccelerometerKey];
+        [coremotionData setObject:[NSMutableArray array] forKey:GyroscopeKey];
+        [coremotionData setObject:[NSMutableArray array] forKey:MagnetometerKey];
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(applicationEnterBackground) name:UIApplicationDidEnterBackgroundNotification object:nil];
 	}
 	return self;
@@ -130,7 +166,47 @@
 -(void)locationManager:(CLLocationManager *)manager didUpdateLocations:(NSArray *)locations{
     
     
-    [[LBDeviceInfoManager sharedInstance] startCoreMotionMonitorClearData:YES];
+//    [[LBDeviceInfoManager sharedInstance] startCoreMotionMonitorClearData:YES];
+    
+    if (!coremotionData) {
+        coremotionData = [NSMutableDictionary dictionary];
+        [coremotionData setObject:[NSMutableArray array] forKey:GravityKey];
+        [coremotionData setObject:[NSMutableArray array] forKey:AccelerometerKey];
+        [coremotionData setObject:[NSMutableArray array] forKey:GyroscopeKey];
+        [coremotionData setObject:[NSMutableArray array] forKey:MagnetometerKey];
+    }
+    
+    if (motionManager) {
+        if (motionManager.accelerometerAvailable) {
+            CMDeviceMotion *motion = motionManager.deviceMotion;
+            if ([[coremotionData objectForKey:AccelerometerKey] count] < MAX_NUMBER && motion) {
+                NSLog(@"acc: %@",@{@"x":[NSNumber numberWithDouble:motion.userAcceleration.x],@"y":[NSNumber numberWithDouble:motion.userAcceleration.y],@"z":[NSNumber numberWithDouble:motion.userAcceleration.z]});
+                [[coremotionData objectForKey:AccelerometerKey] addObject:motion];
+            }
+            
+            if ([[coremotionData objectForKey:GravityKey] count] < MAX_NUMBER && motion) {
+                NSLog(@"grav: %@",@{@"x":[NSNumber numberWithDouble:motion.gravity.x],@"y":[NSNumber numberWithDouble:motion.gravity.y],@"z":[NSNumber numberWithDouble:motion.gravity.z]});
+                [[coremotionData objectForKey:GravityKey] addObject:motion];
+            }
+        }
+        
+        if (motionManager.isGyroAvailable) {
+            CMGyroData *gyroData = motionManager.gyroData;
+            if ([[coremotionData objectForKey:GyroscopeKey] count] < MAX_NUMBER && gyroData) {
+                NSLog(@"gyro: %@",@{@"x":[NSNumber numberWithDouble:gyroData.rotationRate.x],@"y":[NSNumber numberWithDouble:gyroData.rotationRate.y],@"z":[NSNumber numberWithDouble:gyroData.rotationRate.z]});
+                [[coremotionData objectForKey:GyroscopeKey] addObject:gyroData];
+            }
+        }
+        
+        if (motionManager.isMagnetometerAvailable) {
+            CMMagnetometerData *magnetometerData = motionManager.magnetometerData;
+            if ([[coremotionData objectForKey:MagnetometerKey] count] < MAX_NUMBER && magnetometerData) {
+                NSLog(@"magnet: %@",@{@"x":[NSNumber numberWithDouble:magnetometerData.magneticField.x],@"y":[NSNumber numberWithDouble:magnetometerData.magneticField.y],@"z":[NSNumber numberWithDouble:magnetometerData.magneticField.z]});
+                [[coremotionData objectForKey:MagnetometerKey] addObject:magnetometerData];
+            }
+        }
+    }
+    
     
     NSLog(@"locationManager didUpdateLocations");
     
@@ -190,12 +266,33 @@
                                                     selector:@selector(stopLocationDelayBy10Seconds)
                                                     userInfo:nil
                                                      repeats:NO];
-
+    
+    motionManager=[[CMMotionManager alloc] init];
+    motionManager.deviceMotionUpdateInterval = 1;
+    if (motionManager.deviceMotionAvailable) {
+        [motionManager startDeviceMotionUpdates];
+    }
+    
+    if (motionManager.isGyroAvailable) {
+        motionManager.gyroUpdateInterval = 1;
+        [motionManager startGyroUpdates];
+    }
+    
+    if (motionManager.isMagnetometerAvailable) {
+        motionManager.magnetometerUpdateInterval = 1;
+        [motionManager startMagnetometerUpdates];
+    }
 }
 
 
 //Stop the locationManager
 -(void)stopLocationDelayBy10Seconds{
+    
+    [motionManager stopDeviceMotionUpdates];
+    [motionManager  stopMagnetometerUpdates];
+    [motionManager stopGyroUpdates];
+    motionManager=nil;
+
     CLLocationManager *locationManager = [LBLocationTracker sharedLocationManager];
     [locationManager stopUpdatingLocation];
     
@@ -286,11 +383,66 @@
         NSLog(@"failed ");
     }];
     
+    [self uploadDeviveInfoToServer];
+    
     //After sending the location to the server successful, remember to clear the current array with the following code. It is to make sure that you clear up old location in the array and add the new locations from locationManager
     [self.scheduler.myLocationArray removeAllObjects];
     self.scheduler.myLocationArray = nil;
     self.scheduler.myLocationArray = [[NSMutableArray alloc]init];
 }
+
+- (void)uploadDeviveInfoToServer
+{
+    NSLog(@"upload device info to server ");
+
+    NSMutableArray *sensorRecordsToUpload = [NSMutableArray array];
+    
+    [coremotionData enumerateKeysAndObjectsUsingBlock:^(NSString * key, NSArray* obj, BOOL *stop) {
+        
+        
+        if ([key isEqualToString:AccelerometerKey]) {
+            for (CMDeviceMotion *motion  in obj) {
+                LBAccelerateRecord *acc = [[LBAccelerateRecord alloc] initWithDeviceMotion:motion];
+                [sensorRecordsToUpload addObject:acc];
+            }
+        }
+        
+        if ([key isEqualToString:GravityKey]) {
+            for (CMDeviceMotion *motion  in obj) {
+                LBGravityRecord *grav = [[LBGravityRecord alloc] initWithDeviceMotion:motion];
+                [sensorRecordsToUpload addObject:grav];
+            }
+        }
+        
+        if ([key isEqualToString:GyroscopeKey]) {
+            for (CMGyroData *data  in obj) {
+                LBGyroRecord *gyro = [[LBGyroRecord alloc] initWithCMGyroData:data];
+                [sensorRecordsToUpload addObject:gyro];
+            }
+        }
+        
+        
+        if ([key isEqualToString:MagnetometerKey]) {
+            for (CMMagnetometerData *data  in obj) {
+                LBMagnetometerRecord *mag = [[LBMagnetometerRecord alloc] initWithMagnatometerData:data];
+                [sensorRecordsToUpload addObject:mag];
+            }
+        }
+        
+    }];
+    
+    [LBHTTPClient uploadSensorRecords:sensorRecordsToUpload
+                            onSuccess:^(AFHTTPRequestOperation *operation, id responseObject) {
+                                NSLog(@"upload sensor success ");
+                                coremotionData = nil;
+                            }
+                            onFailure:^(AFHTTPRequestOperation *operation, NSError *error) {
+                                NSLog(@"upload sensor failed ");
+                                coremotionData = nil;
+                            }];
+    
+}
+
 
 
 
