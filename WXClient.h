@@ -1,13 +1,20 @@
 //
 //  WXClient.h
-//  SimpleWeather
+//  Demo
 //
-//  Created by Ryan Nystrom on 11/11/13.
-//  Copyright (c) 2013 Ryan Nystrom. All rights reserved.
+//  Created by Jason on 15/8/1.
+//  Copyright (c) 2015年 LB. All rights reserved.
 //
 
-#import <Foundation/Foundation.h>
+@import Foundation;
+@import CoreLocation;
+#import <ReactiveCocoa/ReactiveCocoa/ReactiveCocoa.h>
 
 @interface WXClient : NSObject
+
+- (RACSignal *)fetchJSONFromURL:(NSURL *)url;
+- (RACSignal *)fetchCurrentConditionsForLocation:(CLLocationCoordinate2D)coordinate;
+- (RACSignal *)fetchHourlyForecastForLocation:(CLLocationCoordinate2D)coordinate;
+- (RACSignal *)fetchDailyForecastForLocation:(CLLocationCoordinate2D)coordinate;
 
 @end

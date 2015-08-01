@@ -105,6 +105,9 @@
 - (void)HTTPClientDidInitializedWithInfo:(NSDictionary *)info;
 {
     self.clientReady = YES;
+    
+    
+    
     if (self.dataCenterReady) {
         if (self.delegate && [self.delegate respondsToSelector:@selector(trackerDidInitialized)]) {
             [self.delegate trackerDidInitialized];
