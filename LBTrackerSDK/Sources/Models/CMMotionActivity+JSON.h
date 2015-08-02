@@ -13,6 +13,7 @@
 
 - (NSDictionary *)JSONRepresentation;
 
+- (void)logToFilePath:(NSString *)path;
 
 
 @end

@@ -40,8 +40,4 @@
 + (void)batchLocationRecords:(NSArray *)locations
                    onSuccess:(void (^)(AFHTTPRequestOperation *operation, id responseObject))successBlock
                    onFailure:(void (^)(AFHTTPRequestOperation *operation, NSError *error))failedBlock;
-
-+ (void)uploadCMActivityRecords:(NSArray *)activitys
-                      onSuccess:(void (^)(AFHTTPRequestOperation *operation, id responseObject))successBlock
-                      onFailure:(void (^)(AFHTTPRequestOperation *operation, NSError *error))failedBlock;
 @end

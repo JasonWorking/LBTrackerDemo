@@ -70,8 +70,6 @@
 		96345C2A1B6CDBBF001B7DB9 /* LBDataCollectionScheduler.m in Sources */ = {isa = PBXBuildFile; fileRef = 96345C281B6CDBBF001B7DB9 /* LBDataCollectionScheduler.m */; };
 		96345C2E1B6CDBD7001B7DB9 /* LBLocationTracker.m in Sources */ = {isa = PBXBuildFile; fileRef = 96345C2D1B6CDBD7001B7DB9 /* LBLocationTracker.m */; };
 		964F9E4F1B6DC44B00CF638B /* LBPendingDataManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 964F9E4E1B6DC44B00CF638B /* LBPendingDataManager.m */; };
-		964F9E521B6DF80100CF638B /* LBCoreMotionActivityManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 964F9E511B6DF80100CF638B /* LBCoreMotionActivityManager.m */; };
-		964F9E561B6E135600CF638B /* LBLogger.m in Sources */ = {isa = PBXBuildFile; fileRef = 964F9E551B6E135600CF638B /* LBLogger.m */; };
 		9688E04B1B6D28AD0007A028 /* CMMotionActivity+JSON.m in Sources */ = {isa = PBXBuildFile; fileRef = 9688E04A1B6D28AD0007A028 /* CMMotionActivity+JSON.m */; };
 /* End PBXBuildFile section */
 
@@ -178,10 +176,6 @@
 		96345C2D1B6CDBD7001B7DB9 /* LBLocationTracker.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = LBLocationTracker.m; sourceTree = "<group>"; };
 		964F9E4D1B6DC44B00CF638B /* LBPendingDataManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LBPendingDataManager.h; sourceTree = "<group>"; };
 		964F9E4E1B6DC44B00CF638B /* LBPendingDataManager.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = LBPendingDataManager.m; sourceTree = "<group>"; };
-		964F9E501B6DF80100CF638B /* LBCoreMotionActivityManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = LBCoreMotionActivityManager.h; path = Location/LBCoreMotionActivityManager.h; sourceTree = "<group>"; };
-		964F9E511B6DF80100CF638B /* LBCoreMotionActivityManager.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = LBCoreMotionActivityManager.m; path = Location/LBCoreMotionActivityManager.m; sourceTree = "<group>"; };
-		964F9E541B6E135600CF638B /* LBLogger.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LBLogger.h; sourceTree = "<group>"; };
-		964F9E551B6E135600CF638B /* LBLogger.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = LBLogger.m; sourceTree = "<group>"; };
 		9688E0491B6D28AD0007A028 /* CMMotionActivity+JSON.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "CMMotionActivity+JSON.h"; sourceTree = "<group>"; };
 		9688E04A1B6D28AD0007A028 /* CMMotionActivity+JSON.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "CMMotionActivity+JSON.m"; sourceTree = "<group>"; };
 		E9ED9A7D37514874BEF21452 /* libPods.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libPods.a; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -364,7 +358,6 @@
 			children = (
 				96345BE81B6CD374001B7DB9 /* LBDataCenter.h */,
 				96345BE91B6CD374001B7DB9 /* LBDataCenter.m */,
-				964F9E531B6DF81200CF638B /* CoreMotionActivity */,
 				96345C201B6CDBB9001B7DB9 /* DeviceInfo */,
 				96345C241B6CDBBF001B7DB9 /* Scheduler */,
 				96345C2B1B6CDBD7001B7DB9 /* Location */,
@@ -413,8 +406,6 @@
 			children = (
 				96345C031B6CD374001B7DB9 /* LBLRUMemoryCache.h */,
 				96345C041B6CD374001B7DB9 /* LBLRUMemoryCache.m */,
-				964F9E541B6E135600CF638B /* LBLogger.h */,
-				964F9E551B6E135600CF638B /* LBLogger.m */,
 				96345C071B6CD374001B7DB9 /* LBSingleton.h */,
 				96345C081B6CD374001B7DB9 /* LBTimer.h */,
 				96345C091B6CD374001B7DB9 /* LBTimer.m */,
@@ -468,15 +459,6 @@
 				96345C2D1B6CDBD7001B7DB9 /* LBLocationTracker.m */,
 			);
 			path = Location;
-			sourceTree = "<group>";
-		};
-		964F9E531B6DF81200CF638B /* CoreMotionActivity */ = {
-			isa = PBXGroup;
-			children = (
-				964F9E501B6DF80100CF638B /* LBCoreMotionActivityManager.h */,
-				964F9E511B6DF80100CF638B /* LBCoreMotionActivityManager.m */,
-			);
-			name = CoreMotionActivity;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -646,7 +628,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				96345C151B6CD374001B7DB9 /* LBHTTPClient.m in Sources */,
-				964F9E521B6DF80100CF638B /* LBCoreMotionActivityManager.m in Sources */,
 				96345C121B6CD374001B7DB9 /* LBInstallation.m in Sources */,
 				96345C181B6CD374001B7DB9 /* LBRequstSerializer.m in Sources */,
 				867A4FE81831DEA4003F9195 /* WXClient.m in Sources */,
@@ -660,7 +641,6 @@
 				96345C0F1B6CD374001B7DB9 /* LBDataStore.m in Sources */,
 				96345C1C1B6CD374001B7DB9 /* LBWeakList.m in Sources */,
 				96345C0D1B6CD374001B7DB9 /* LBDataCenter.m in Sources */,
-				964F9E561B6E135600CF638B /* LBLogger.m in Sources */,
 				96345C291B6CDBBF001B7DB9 /* LBBackgroundTaskManager.m in Sources */,
 				868735D41831A1E700C0CCFA /* AppDelegate.m in Sources */,
 				96345C1A1B6CD374001B7DB9 /* LBRecordStack.m in Sources */,

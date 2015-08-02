@@ -11,6 +11,7 @@
 #import "LBLocationRecord.h"
 #import "LBSenserRecord.h"
 #import "LBPendingDataManager.h"
+//#import "LBDeviceInfoManager.h"
 #import <CoreMotion/CoreMotion.h>
 #define LATITUDE @"latitude"
 #define LONGITUDE @"longitude"
@@ -45,7 +46,6 @@
 
 @implementation LBLocationTracker{
     CMMotionManager *motionManager;
-    CMMotionActivityManager *cmaManager;
     NSMutableDictionary *coremotionData;
 }
 

@@ -275,7 +275,27 @@ NSString *const LBDeviceInfoManagerSensorValueKey = @"LBDeviceInfoManagerSensorV
 }
 
 - (void)startCoreMotionMonitorClearData:(BOOL)clear {
-        
+    
+//    
+//    UIApplication* application = [UIApplication sharedApplication];
+//    
+//    if ([application applicationState] == UIApplicationStateBackground) {
+//        
+//        if (self.bgTaskID != UIBackgroundTaskInvalid) {
+//            [[UIApplication sharedApplication] endBackgroundTask:self.bgTaskID];
+//        }
+//        
+//        UIBackgroundTaskIdentifier bgTaskId = UIBackgroundTaskInvalid;
+//        if([application respondsToSelector:@selector(beginBackgroundTaskWithExpirationHandler:)]){
+//            bgTaskId = [application beginBackgroundTaskWithExpirationHandler:^{
+//                NSLog(@"background task %lu expired", (unsigned long)bgTaskId);
+//                [application endBackgroundTask:bgTaskId];
+//            }];
+//            self.bgTaskID = bgTaskId;
+//        }
+//    }
+
+    
     if (clear) {
         self.coreMotionData = [NSMutableDictionary dictionary];
         
