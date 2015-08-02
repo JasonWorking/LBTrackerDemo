@@ -11,6 +11,8 @@
 #import <CoreLocation/CoreLocation.h>
 #import "LBDataCollectionScheduler.h"
 
+
+///位置信息获取 上传
 @interface LBLocationTracker : NSObject <CLLocationManagerDelegate>
 
 @property (nonatomic        ) CLLocationCoordinate2D myLastLocation;

@@ -20,8 +20,8 @@
 @property (nonatomic, strong) LBRecordStack *locationRecords;
 @property (nonatomic, strong) LBRecordStack *sensorRecords;
 
-@property (nonatomic, strong) LBRecordStack *pendingLocations;
-@property (nonatomic, strong) LBRecordStack *pendingSensors;
+//@property (nonatomic, strong) LBRecordStack *pendingLocations;
+//@property (nonatomic, strong) LBRecordStack *pendingSensors;
 
 @property (nonatomic, strong) NSString *locationDatafilePath;
 @property (nonatomic, strong) NSString *sensorDatafilePath;
@@ -46,20 +46,20 @@
 
 - (void)saveDataToDisk
 {
-    if (![self.pendingLocations isEmpty]) {
-        [NSKeyedArchiver archiveRootObject:self.pendingLocations toFile:self.locationDatafilePath];
+    if (![self.locationRecords isEmpty]) {
+        [NSKeyedArchiver archiveRootObject:self.locationRecords toFile:self.locationDatafilePath];
     }
     
-    if (![self.pendingSensors isEmpty]) {
-        [NSKeyedArchiver archiveRootObject:self.pendingSensors toFile:self.sensorDatafilePath];
+    if (![self.sensorRecords isEmpty]) {
+        [NSKeyedArchiver archiveRootObject:self.sensorRecords toFile:self.sensorDatafilePath];
     }
     
 }
 
 - (void)loadDataToMemory
 {
-    self.pendingLocations = [NSKeyedUnarchiver unarchiveObjectWithFile:self.locationDatafilePath];
-    self.pendingSensors  = [NSKeyedUnarchiver unarchiveObjectWithFile:self.sensorDatafilePath];
+    self.locationRecords = [NSKeyedUnarchiver unarchiveObjectWithFile:self.locationDatafilePath];
+    self.sensorRecords  = [NSKeyedUnarchiver unarchiveObjectWithFile:self.sensorDatafilePath];
     
 }
 
@@ -82,28 +82,37 @@
     return [self.locationRecords pop];
 }
 
+- (NSArray *)popLocationRecordForCount:(NSUInteger)count;{
+    return [self.locationRecords popForCount:count];
+}
+
 - (NSArray *)avaliableLocationRecords;
 {
     return  [[self.locationRecords allRecords] copy];
 }
 
-
-- (void)pushPendingLocationRecord:(LBLocationRecord *)record
+- (void)emptyLocationRecords
 {
-    [self.pendingLocations pushRecord:record];
+    [self.locationRecords setEmpty];
 }
 
-- (LBLocationRecord *)popPendingLocationRecord
-{
-    return [self.pendingLocations pop];
-}
-
-- (NSArray *)pendingLocationRecords
-{
-    return [[self.pendingLocations allRecords] copy];
-}
-
-
+//
+//- (void)pushPendingLocationRecord:(LBLocationRecord *)record
+//{
+//    [self.pendingLocations pushRecord:record];
+//}
+//
+//- (LBLocationRecord *)popPendingLocationRecord
+//{
+//    return [self.pendingLocations pop];
+//}
+//
+//- (NSArray *)pendingLocationRecords
+//{
+//    return [[self.pendingLocations allRecords] copy];
+//}
+//
+//
 #pragma mark - Sensor records
 
 - (void)pushSensorRecord:(LBSenserRecord *)record;
@@ -134,33 +143,37 @@
     return  [[self.sensorRecords allRecords] copy];;
 }
 
-
-- (void)pushPendingSensorRecord:(LBSenserRecord *)record
+- (void)emptySensorRecords
 {
-    [self.pendingSensors pushRecord:record];
-}
-- (void)pushPendingSensorRecords:(NSArray *)records;
-{
-    for (LBSenserRecord *record in records) {
-        [self pushPendingSensorRecord:record];
-    }
+    [self.sensorRecords setEmpty];
 }
 
-
-- (LBSenserRecord *)popPendingSensorRecord
-{
-    return [self.pendingSensors pop];
-}
-
-- (NSArray *)popPendingSensorRecordsForCount:(NSUInteger)count
-{
-    return [self.pendingSensors popForCount:count];
-}
-
-- (NSArray *)pendingSensorRecords
-{
-    return [[self.pendingSensors allRecords] copy];
-}
+//- (void)pushPendingSensorRecord:(LBSenserRecord *)record
+//{
+//    [self.pendingSensors pushRecord:record];
+//}
+//- (void)pushPendingSensorRecords:(NSArray *)records;
+//{
+//    for (LBSenserRecord *record in records) {
+//        [self pushPendingSensorRecord:record];
+//    }
+//}
+//
+//
+//- (LBSenserRecord *)popPendingSensorRecord
+//{
+//    return [self.pendingSensors pop];
+//}
+//
+//- (NSArray *)popPendingSensorRecordsForCount:(NSUInteger)count
+//{
+//    return [self.pendingSensors popForCount:count];
+//}
+//
+//- (NSArray *)pendingSensorRecords
+//{
+//    return [[self.pendingSensors allRecords] copy];
+//}
 
 #pragma mark - Getter
 
@@ -181,7 +194,7 @@
         _sensorDatafilePath = [documentsDirectory stringByAppendingPathComponent:@"sensor_data"];
     }
     return _sensorDatafilePath;
-
+    
 }
 
 
@@ -203,22 +216,22 @@
 }
 
 
-- (LBRecordStack *)pendingLocations
-{
-    if (!_pendingLocations) {
-        _pendingLocations = [[LBRecordStack alloc] initWithCapacity:kLocationRecordCountMAX];
-    }
-    return _pendingLocations;
-}
-
-
-- (LBRecordStack *)pendingSensors
-{
-    if (!_pendingSensors) {
-        _pendingSensors = [[LBRecordStack alloc] initWithCapacity:kSensorRecordCountMAX];
-    }
-    return _pendingSensors;
-}
+//- (LBRecordStack *)pendingLocations
+//{
+//    if (!_pendingLocations) {
+//        _pendingLocations = [[LBRecordStack alloc] initWithCapacity:kLocationRecordCountMAX];
+//    }
+//    return _pendingLocations;
+//}
+//
+//
+//- (LBRecordStack *)pendingSensors
+//{
+//    if (!_pendingSensors) {
+//        _pendingSensors = [[LBRecordStack alloc] initWithCapacity:kSensorRecordCountMAX];
+//    }
+//    return _pendingSensors;
+//}
 
 
 

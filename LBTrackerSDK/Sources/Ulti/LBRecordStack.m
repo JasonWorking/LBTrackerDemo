@@ -60,6 +60,15 @@
     return isEmpaty;
 }
 
+- (void)setEmpty
+{
+    [self.lock lock];
+    if ([self.array count]) {
+        [self.array removeAllObjects];
+    }
+    [self.lock lock];
+}
+
 
 - (void)pushRecord:(id)record
 {
@@ -69,7 +78,7 @@
     }
     [self.array insertObject:record atIndex:0];
     [self.lock lock];
-
+    
 }
 
 - (id)pop

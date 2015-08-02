@@ -13,6 +13,7 @@
 - (instancetype)initWithCapacity:(NSUInteger)capacity;
 
 - (BOOL)isEmpty;
+- (void)setEmpty;
 - (void)pushRecord:(id)record;
 - (id)pop;
 - (NSArray *)popForCount:(NSUInteger)count;

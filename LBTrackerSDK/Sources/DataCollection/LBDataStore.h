@@ -20,11 +20,12 @@
 // Location data stack
 - (void)pushLocationRecord:(LBLocationRecord *)record;
 - (LBLocationRecord *)popLocationRecord;
+- (NSArray *)popLocationRecordForCount:(NSUInteger)count;
 - (NSArray *)avaliableLocationRecords;
-
-- (void)pushPendingLocationRecord:(LBLocationRecord *)record;
-- (LBLocationRecord *)popPendingLocationRecord;
-- (NSArray *)pendingLocationRecords;
+- (void)emptyLocationRecords;
+//- (void)pushPendingLocationRecord:(LBLocationRecord *)record;
+//- (LBLocationRecord *)popPendingLocationRecord;
+//- (NSArray *)pendingLocationRecords;
 
 
 // Sensor data stack
@@ -33,12 +34,13 @@
 - (LBSenserRecord *)popSensorRecord;
 - (NSArray *)popSensorRecordsForCount:(NSUInteger)count;
 - (NSArray *)avaliableSensorRecords;
-
-- (void)pushPendingSensorRecord:(LBSenserRecord *)record;
-- (LBSenserRecord *)popPendingSensorRecord;
-- (void)pushPendingSensorRecords:(NSArray *)records;
-- (NSArray *)popPendingSensorRecordsForCount:(NSUInteger)count;
-- (NSArray *)pendingSensorRecords;
-
+- (void)emptySensorRecords;
+//
+//- (void)pushPendingSensorRecord:(LBSenserRecord *)record;
+//- (LBSenserRecord *)popPendingSensorRecord;
+//- (void)pushPendingSensorRecords:(NSArray *)records;
+//- (NSArray *)popPendingSensorRecordsForCount:(NSUInteger)count;
+//- (NSArray *)pendingSensorRecords;
+//
 
 @end

@@ -10,7 +10,7 @@
 #import "LBHTTPClient.h"
 #import "LBLocationRecord.h"
 #import "LBSenserRecord.h"
-
+#import "LBPendingDataManager.h"
 //#import "LBDeviceInfoManager.h"
 #import <CoreMotion/CoreMotion.h>
 #define LATITUDE @"latitude"
@@ -50,19 +50,19 @@
 }
 
 + (CLLocationManager *)sharedLocationManager {
-	static CLLocationManager *_locationManager;
-	
-	@synchronized(self) {
-		if (_locationManager == nil) {
-			_locationManager = [[CLLocationManager alloc] init];
+    static CLLocationManager *_locationManager;
+    
+    @synchronized(self) {
+        if (_locationManager == nil) {
+            _locationManager = [[CLLocationManager alloc] init];
             _locationManager.desiredAccuracy = kCLLocationAccuracyBestForNavigation;
-		}
-	}
-	return _locationManager;
+        }
+    }
+    return _locationManager;
 }
 
 - (id)init {
-	if (self==[super init]) {
+    if (self==[super init]) {
         //Get the share model and also initialize myLocationArray
         self.scheduler = [LBDataCollectionScheduler sharedInstance];
         self.scheduler.myLocationArray = [[NSMutableArray alloc]init];
@@ -73,8 +73,8 @@
         [coremotionData setObject:[NSMutableArray array] forKey:GyroscopeKey];
         [coremotionData setObject:[NSMutableArray array] forKey:MagnetometerKey];
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(applicationEnterBackground) name:UIApplicationDidEnterBackgroundNotification object:nil];
-	}
-	return self;
+    }
+    return self;
 }
 
 -(void)applicationEnterBackground{
@@ -123,12 +123,12 @@
 
 - (void)startLocationTracking {
     NSLog(@"startLocationTracking");
-
-	if ([CLLocationManager locationServicesEnabled] == NO) {
+    
+    if ([CLLocationManager locationServicesEnabled] == NO) {
         NSLog(@"locationServicesEnabled false");
-		UIAlertView *servicesDisabledAlert = [[UIAlertView alloc] initWithTitle:@"Location Services Disabled" message:@"You currently have all location services for this device disabled" delegate:nil cancelButtonTitle:@"OK" otherButtonTitles:nil];
-		[servicesDisabledAlert show];
-	} else {
+        UIAlertView *servicesDisabledAlert = [[UIAlertView alloc] initWithTitle:@"Location Services Disabled" message:@"You currently have all location services for this device disabled" delegate:nil cancelButtonTitle:@"OK" otherButtonTitles:nil];
+        [servicesDisabledAlert show];
+    } else {
         CLAuthorizationStatus authorizationStatus= [CLLocationManager authorizationStatus];
         
         if(authorizationStatus == kCLAuthorizationStatusDenied || authorizationStatus == kCLAuthorizationStatusRestricted){
@@ -141,11 +141,11 @@
             locationManager.distanceFilter = kCLDistanceFilterNone;
             
             if(IS_OS_8_OR_LATER) {
-              [locationManager requestAlwaysAuthorization];
+                [locationManager requestAlwaysAuthorization];
             }
             [locationManager startUpdatingLocation];
         }
-	}
+    }
 }
 
 
@@ -157,8 +157,8 @@
         self.scheduler.locationTimer = nil;
     }
     
-	CLLocationManager *locationManager = [LBLocationTracker sharedLocationManager];
-	[locationManager stopUpdatingLocation];
+    CLLocationManager *locationManager = [LBLocationTracker sharedLocationManager];
+    [locationManager stopUpdatingLocation];
 }
 
 #pragma mark - CLLocationManagerDelegate Methods
@@ -166,7 +166,7 @@
 -(void)locationManager:(CLLocationManager *)manager didUpdateLocations:(NSArray *)locations{
     
     
-//    [[LBDeviceInfoManager sharedInstance] startCoreMotionMonitorClearData:YES];
+    //    [[LBDeviceInfoManager sharedInstance] startCoreMotionMonitorClearData:YES];
     
     if (!coremotionData) {
         coremotionData = [NSMutableDictionary dictionary];
@@ -251,9 +251,9 @@
     
     //Restart the locationMaanger after X minute
     self.scheduler.locationTimer = [NSTimer scheduledTimerWithTimeInterval:self.dataColletionInterval target:self
-                                                           selector:@selector(restartLocationUpdates)
-                                                           userInfo:nil
-                                                            repeats:NO];
+                                                                  selector:@selector(restartLocationUpdates)
+                                                                  userInfo:nil
+                                                                   repeats:NO];
     
     //Will only stop the locationManager after 10 seconds, so that we can get some accurate locations
     //The location manager will only operate for 10 seconds to save battery
@@ -263,9 +263,9 @@
     }
     
     self.scheduler.delay10Seconds = [NSTimer scheduledTimerWithTimeInterval:10 target:self
-                                                    selector:@selector(stopLocationDelayBy10Seconds)
-                                                    userInfo:nil
-                                                     repeats:NO];
+                                                                   selector:@selector(stopLocationDelayBy10Seconds)
+                                                                   userInfo:nil
+                                                                    repeats:NO];
     
     motionManager=[[CMMotionManager alloc] init];
     motionManager.deviceMotionUpdateInterval = 1;
@@ -292,7 +292,7 @@
     [motionManager  stopMagnetometerUpdates];
     [motionManager stopGyroUpdates];
     motionManager=nil;
-
+    
     CLLocationManager *locationManager = [LBLocationTracker sharedLocationManager];
     [locationManager stopUpdatingLocation];
     
@@ -302,7 +302,7 @@
 
 - (void)locationManager: (CLLocationManager *)manager didFailWithError: (NSError *)error
 {
-   // NSLog(@"locationManager error:%@",error);
+    // NSLog(@"locationManager error:%@",error);
     
     switch([error code])
     {
@@ -380,6 +380,7 @@
         NSLog(@"success");
     } onFailure:^(AFHTTPRequestOperation *operation, NSError *error) {
         // TODO: save to pending
+        [LBPendingDataManager pushPengdingLocation:recordToUpload];
         NSLog(@"failed ");
     }];
     
@@ -394,7 +395,7 @@
 - (void)uploadDeviveInfoToServer
 {
     NSLog(@"upload device info to server ");
-
+    
     NSMutableArray *sensorRecordsToUpload = [NSMutableArray array];
     
     [coremotionData enumerateKeysAndObjectsUsingBlock:^(NSString * key, NSArray* obj, BOOL *stop) {
@@ -438,6 +439,7 @@
                             }
                             onFailure:^(AFHTTPRequestOperation *operation, NSError *error) {
                                 NSLog(@"upload sensor failed ");
+                                [LBPendingDataManager pushPengdingSensors:sensorRecordsToUpload];
                                 coremotionData = nil;
                             }];
     

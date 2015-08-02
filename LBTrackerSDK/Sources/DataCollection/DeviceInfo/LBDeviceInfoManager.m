@@ -21,6 +21,7 @@
 #import <UIKit/UIKit.h>
 #import "LBHTTPClient.h"
 #import "LBSenserRecord.h"
+#import "LBPendingDataManager.h"
 
 #define IOS_CELLULAR    @"pdp_ip0"
 #define IOS_WIFI        @"en0"
@@ -539,6 +540,7 @@ NSString *const LBDeviceInfoManagerSensorValueKey = @"LBDeviceInfoManagerSensorV
         NSLog(@"upload sensor success ");
     }
                             onFailure:^(AFHTTPRequestOperation *operation, NSError *error) {
+                                [LBPendingDataManager pushPengdingSensors:sensorRecordsToUpload];
         NSLog(@"upload sensor failed ");
     }];
     
