@@ -14,13 +14,14 @@
 #import "LBPendingDataManager.h"
 #import <CoreMotion/CMMotionActivityManager.h>
 #import "CMMotionActivity+JSON.h"
+#import "LBCoreMotionActivityManager.h"
 
-@interface LBDataCenter ()/*<LBLocationCenterDelegate>*/
+@interface LBDataCenter ()
 @property (nonatomic, strong) NSOperationQueue *queue;
 @property (nonatomic, strong) NSTimer *dataCollectionTimer;
 @property (nonatomic, strong) LBLocationTracker *locationTracker;
 @property (nonatomic, strong) LBDeviceInfoManager *deviceInfoManager;
-@property (nonatomic, strong) CMMotionActivityManager *cmaManager;
+@property (nonatomic, strong) LBCoreMotionActivityManager *cmaManager;
 @end
 
 @implementation LBDataCenter
@@ -41,7 +42,7 @@ IMP_SINGLETON;
 - (instancetype) init
 {
     if (self = [super init]) {
-        _cmaManager = [[CMMotionActivityManager alloc] init];
+        _cmaManager = [[LBCoreMotionActivityManager alloc] init];
         _locationTracker = [[LBLocationTracker alloc] init];
         _deviceInfoManager = [LBDeviceInfoManager sharedInstance];
         _queue = [[NSOperationQueue alloc] init];
@@ -66,6 +67,7 @@ IMP_SINGLETON;
         self.dataCollectionTimer = nil;
     }
     
+    [self.cmaManager startQueryMotionActivity];
     [self.locationTracker startLocationTrackingWithTimeInterval:MAX(time, 60)];
 //    [self.deviceInfoManager startCoreMotionMonitorClearData:YES];
     // Fire data upload

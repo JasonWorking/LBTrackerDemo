@@ -70,6 +70,7 @@
 		96345C2A1B6CDBBF001B7DB9 /* LBDataCollectionScheduler.m in Sources */ = {isa = PBXBuildFile; fileRef = 96345C281B6CDBBF001B7DB9 /* LBDataCollectionScheduler.m */; };
 		96345C2E1B6CDBD7001B7DB9 /* LBLocationTracker.m in Sources */ = {isa = PBXBuildFile; fileRef = 96345C2D1B6CDBD7001B7DB9 /* LBLocationTracker.m */; };
 		964F9E4F1B6DC44B00CF638B /* LBPendingDataManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 964F9E4E1B6DC44B00CF638B /* LBPendingDataManager.m */; };
+		964F9E5B1B6E3B1F00CF638B /* LBCoreMotionActivityManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 964F9E5A1B6E3B1F00CF638B /* LBCoreMotionActivityManager.m */; };
 		9688E04B1B6D28AD0007A028 /* CMMotionActivity+JSON.m in Sources */ = {isa = PBXBuildFile; fileRef = 9688E04A1B6D28AD0007A028 /* CMMotionActivity+JSON.m */; };
 /* End PBXBuildFile section */
 
@@ -163,8 +164,8 @@
 		96345C071B6CD374001B7DB9 /* LBSingleton.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LBSingleton.h; sourceTree = "<group>"; };
 		96345C081B6CD374001B7DB9 /* LBTimer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LBTimer.h; sourceTree = "<group>"; };
 		96345C091B6CD374001B7DB9 /* LBTimer.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = LBTimer.m; sourceTree = "<group>"; };
-		96345C0A1B6CD374001B7DB9 /* LBWeakList.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = LBWeakList.h; path = ../Ulti/LBWeakList.h; sourceTree = "<group>"; };
-		96345C0B1B6CD374001B7DB9 /* LBWeakList.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = LBWeakList.m; path = ../Ulti/LBWeakList.m; sourceTree = "<group>"; };
+		96345C0A1B6CD374001B7DB9 /* LBWeakList.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LBWeakList.h; sourceTree = "<group>"; };
+		96345C0B1B6CD374001B7DB9 /* LBWeakList.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = LBWeakList.m; sourceTree = "<group>"; };
 		96345C1D1B6CD73D001B7DB9 /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Images.xcassets; sourceTree = "<group>"; };
 		96345C211B6CDBB9001B7DB9 /* LBDeviceInfoManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LBDeviceInfoManager.h; sourceTree = "<group>"; };
 		96345C221B6CDBB9001B7DB9 /* LBDeviceInfoManager.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = LBDeviceInfoManager.m; sourceTree = "<group>"; };
@@ -176,6 +177,8 @@
 		96345C2D1B6CDBD7001B7DB9 /* LBLocationTracker.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = LBLocationTracker.m; sourceTree = "<group>"; };
 		964F9E4D1B6DC44B00CF638B /* LBPendingDataManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LBPendingDataManager.h; sourceTree = "<group>"; };
 		964F9E4E1B6DC44B00CF638B /* LBPendingDataManager.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = LBPendingDataManager.m; sourceTree = "<group>"; };
+		964F9E591B6E3B1F00CF638B /* LBCoreMotionActivityManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LBCoreMotionActivityManager.h; sourceTree = "<group>"; };
+		964F9E5A1B6E3B1F00CF638B /* LBCoreMotionActivityManager.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = LBCoreMotionActivityManager.m; sourceTree = "<group>"; };
 		9688E0491B6D28AD0007A028 /* CMMotionActivity+JSON.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "CMMotionActivity+JSON.h"; sourceTree = "<group>"; };
 		9688E04A1B6D28AD0007A028 /* CMMotionActivity+JSON.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "CMMotionActivity+JSON.m"; sourceTree = "<group>"; };
 		E9ED9A7D37514874BEF21452 /* libPods.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libPods.a; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -358,6 +361,7 @@
 			children = (
 				96345BE81B6CD374001B7DB9 /* LBDataCenter.h */,
 				96345BE91B6CD374001B7DB9 /* LBDataCenter.m */,
+				964F9E581B6E3B1F00CF638B /* CoreMotionActivity */,
 				96345C201B6CDBB9001B7DB9 /* DeviceInfo */,
 				96345C241B6CDBBF001B7DB9 /* Scheduler */,
 				96345C2B1B6CDBD7001B7DB9 /* Location */,
@@ -380,8 +384,6 @@
 				96345BF61B6CD374001B7DB9 /* LBLocationRecord.m */,
 				96345BF71B6CD374001B7DB9 /* LBSenserRecord.h */,
 				96345BF81B6CD374001B7DB9 /* LBSenserRecord.m */,
-				96345C0A1B6CD374001B7DB9 /* LBWeakList.h */,
-				96345C0B1B6CD374001B7DB9 /* LBWeakList.m */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -404,11 +406,8 @@
 		96345C021B6CD374001B7DB9 /* Ulti */ = {
 			isa = PBXGroup;
 			children = (
-				96345C031B6CD374001B7DB9 /* LBLRUMemoryCache.h */,
-				96345C041B6CD374001B7DB9 /* LBLRUMemoryCache.m */,
 				96345C071B6CD374001B7DB9 /* LBSingleton.h */,
-				96345C081B6CD374001B7DB9 /* LBTimer.h */,
-				96345C091B6CD374001B7DB9 /* LBTimer.m */,
+				964F9E571B6E304700CF638B /* Unused */,
 			);
 			path = Ulti;
 			sourceTree = "<group>";
@@ -459,6 +458,28 @@
 				96345C2D1B6CDBD7001B7DB9 /* LBLocationTracker.m */,
 			);
 			path = Location;
+			sourceTree = "<group>";
+		};
+		964F9E571B6E304700CF638B /* Unused */ = {
+			isa = PBXGroup;
+			children = (
+				96345C0A1B6CD374001B7DB9 /* LBWeakList.h */,
+				96345C0B1B6CD374001B7DB9 /* LBWeakList.m */,
+				96345C031B6CD374001B7DB9 /* LBLRUMemoryCache.h */,
+				96345C041B6CD374001B7DB9 /* LBLRUMemoryCache.m */,
+				96345C081B6CD374001B7DB9 /* LBTimer.h */,
+				96345C091B6CD374001B7DB9 /* LBTimer.m */,
+			);
+			name = Unused;
+			sourceTree = "<group>";
+		};
+		964F9E581B6E3B1F00CF638B /* CoreMotionActivity */ = {
+			isa = PBXGroup;
+			children = (
+				964F9E591B6E3B1F00CF638B /* LBCoreMotionActivityManager.h */,
+				964F9E5A1B6E3B1F00CF638B /* LBCoreMotionActivityManager.m */,
+			);
+			path = CoreMotionActivity;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -628,6 +649,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				96345C151B6CD374001B7DB9 /* LBHTTPClient.m in Sources */,
+				964F9E5B1B6E3B1F00CF638B /* LBCoreMotionActivityManager.m in Sources */,
 				96345C121B6CD374001B7DB9 /* LBInstallation.m in Sources */,
 				96345C181B6CD374001B7DB9 /* LBRequstSerializer.m in Sources */,
 				867A4FE81831DEA4003F9195 /* WXClient.m in Sources */,

@@ -13,6 +13,7 @@
 #import "LBLocationRecord.h"
 #import "LBSenserRecord.h"
 #import "LBDataCenter.h"
+#import "CMMotionActivity+JSON.h"
 
 NSString *const LBHTTPClientErrorDemain = @"LBHTTPClient.errorDomain";
 static NSString *const kLBSenzLeancloudHostURlString  = @"http://api.trysenz.com";
@@ -160,17 +161,15 @@ NSError * ErrorWithType(HTTPClientErrorType type)
     [[self sharedClient] uploadLocationRecord:locationRecord onSuccess:successBlock onFailure:failedBlock];
 }
 
+
+
 /*
  
- curl -X POST \
- -H "X-AVOSCloud-Application-Id: 9ra69chz8rbbl77mlplnl4l2pxyaclm612khhytztl8b1f9o" \
- -H "X-AVOSCloud-Application-Key: 1zohz2ihxp9dhqamhfpeaer8nh1ewqd9uephe9ztvkka544b" \
- -H "Content-Type: application/json" \
+ curl -X POST   -H "X-senz-Auth: 5548eb2ade57fc001b0000010be762a58ac542706a8b817428d9766e"  -H "Content-Type: application/json"  \
  -d '{"timestamp":14020304000,"installation": {"__type":"Pointer","className":"_Installation",
  "objectId":"l68QQ3Ownwra3HYgWvDJLDW7Hfje7MBh"},"type":"location","source": "baidu.location_sdk",
  "locationRadius": 60.479766845703125,"location":{"__type":"GeoPoint","latitude":1,"longitude":2}}'  \
- https://api.leancloud.cn/1.1/classes/Log
-
+ http://api.trysenz.com/data/Log
  
  */
 - (void)uploadLocationRecord:(LBLocationRecord *)locationRecord
@@ -220,12 +219,12 @@ NSError * ErrorWithType(HTTPClientErrorType type)
 }
 
 
+
 /*
  
- curl -X POST   -H "X-AVOSCloud-Application-Id: 9ra69chz8rbbl77mlplnl4l2pxyaclm612khhytztl8b1f9o"   -H "X-AVOSCloud-Application-Key: 1zohz2ihxp9dhqamhfpeaer8nh1ewqd9uephe9ztvkka544b"   -H "Content-Type: application/json"   -d '{"timestamp":14020304000,"installation":{"__type":"Pointer",
+ curl -X POST   -H "X-senz-Auth: 5548eb2ade57fc001b0000010be762a58ac542706a8b817428d9766e"  -H "Content-Type: application/json"   -d '{"timestamp":14020304000,"installation":{"__type":"Pointer",
  "className":"_Installation",
- "objectId":"l68QQ3Ownwra3HYgWvDJLDW7Hfje7MBh"} ,"type":"sensor","value":{ "events": [{"timestamp":2874573193298,"accuracy": 2,"sensorName": "acc","values": [-7.8747406005859375,5.423065185546875,2.5889434814453125]}]}}'    https://api.leancloud.cn/1.1/classes/Log
- 
+ "objectId":"l68QQ3Ownwra3HYgWvDJLDW7Hfje7MBh"} ,"type":"sensor","value":{ "events": [{"timestamp":2874573193298,"accuracy": 2,"sensorName": "acc","values": [-7.8747406005859375,5.423065185546875,2.5889434814453125]}]}}'   http://api.trysenz.com/data/Log
  */
 - (void)uploadSensorRecords:(NSArray *)sensorRecords
                   onSuccess:(void (^)(AFHTTPRequestOperation *operation, id responseObject))successBlock
@@ -354,6 +353,50 @@ NSError * ErrorWithType(HTTPClientErrorType type)
 }
 
 
++ (AFHTTPRequestOperation *)uploadCMActivityRecords:(NSArray *)activitys
+                                          onSuccess:(void (^)(AFHTTPRequestOperation *operation, id responseObject))successBlock
+                                          onFailure:(void (^)(AFHTTPRequestOperation *operation, NSError *error))failedBlock
+{
+    return [[self sharedClient] uploadCMActivityRecords:activitys onSuccess:successBlock onFailure:failedBlock];
+}
+
+
+
+- (AFHTTPRequestOperation *)uploadCMActivityRecords:(NSArray *)activitys
+                                          onSuccess:(void (^)(AFHTTPRequestOperation *operation, id responseObject))successBlock
+                                          onFailure:(void (^)(AFHTTPRequestOperation *operation, NSError *error))failedBlock
+{
+    
+    NSMutableArray *JSONArray = [NSMutableArray arrayWithCapacity:[activitys count]];
+    [activitys enumerateObjectsUsingBlock:^(CMMotionActivity* obj, NSUInteger idx, BOOL *stop) {
+        [JSONArray addObject:[obj JSONRepresentation]];
+    }];
+    
+    NSDictionary *param = @{@"timestamp":@([[NSDate date] timeIntervalSince1970] *1000),
+                            @"type":@"cmActivitys",
+                            @"value":@{
+                                    @"activitys":JSONArray
+                                    }};
+    __weak typeof(self) weakSelf = self;
+    return [self POST:@"/data/Log"
+           parameters:param
+              success:^(AFHTTPRequestOperation *operation, id responseObject) {
+                  NSDictionary *resp = (NSDictionary * )responseObject;
+                  NSString *log = [NSString stringWithFormat:@"upload coremotion activitys success: %@ , %@", resp[@"createdAt"],resp[@"objectId"]];
+                  [weakSelf logStringToFile:log];
+                  if (successBlock) {
+                      successBlock(operation, responseObject);
+                  }
+              }
+              failure:^(AFHTTPRequestOperation *operation, NSError *error) {
+                  NSString *log = [NSString stringWithFormat:@"upload coremotion activitys error : %@ ", error];
+                  [weakSelf logStringToFile:log];
+                  if (failedBlock) {
+                      failedBlock(operation, error);
+                  }
+              }];
+    
+}
 
 
 - (void)logStringToFile:(NSString *)stringToLog
