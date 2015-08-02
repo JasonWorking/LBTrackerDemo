@@ -12,6 +12,7 @@
 #import "LBDataStore.h"
 #import "LBLocationTracker.h"
 #import "LBPendingDataManager.h"
+#import "LBCoreMotionActivityManager.h"
 #import <CoreMotion/CMMotionActivityManager.h>
 #import "CMMotionActivity+JSON.h"
 
@@ -35,6 +36,7 @@ IMP_SINGLETON;
     LBDataCenter *dc = [LBDataCenter sharedInstance];
     dc.delegate = delegate;
     [LBPendingDataManager sharedInstance];
+    [LBCoreMotionActivityManager sharedInstance];
     [dc.delegate dataCenterDidInitialized];
 }
 
@@ -66,8 +68,9 @@ IMP_SINGLETON;
         self.dataCollectionTimer = nil;
     }
     
+    [[LBCoreMotionActivityManager sharedInstance] startQueryMotionActivity];
     [self.locationTracker startLocationTrackingWithTimeInterval:MAX(time, 60)];
-//    [self.deviceInfoManager startCoreMotionMonitorClearData:YES];
+    [self.deviceInfoManager startCoreMotionMonitorClearData:YES];
     // Fire data upload
     self.dataCollectionTimer = [NSTimer scheduledTimerWithTimeInterval:MAX(time, 60)
                                                         target:self

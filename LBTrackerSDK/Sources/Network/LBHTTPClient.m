@@ -13,6 +13,11 @@
 #import "LBLocationRecord.h"
 #import "LBSenserRecord.h"
 #import "LBDataCenter.h"
+#import "LBLogger.h"
+#import "CMMotionActivity+JSON.h"
+
+
+static NSString *const  kLBHTTPClientLogFile = @"LBHTTPClientLogFile";
 
 NSString *const LBHTTPClientErrorDemain = @"LBHTTPClient.errorDomain";
 static NSString *const kLBSenzLeancloudHostURlString  = @"http://api.trysenz.com";
@@ -128,8 +133,8 @@ NSError * ErrorWithType(HTTPClientErrorType type)
                 NSDictionary *dict = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:NULL];
                 if (!dict[@"error"] && dict[@"result"]) {
                     LBInstallation *installation = [[LBInstallation alloc] initWithDictionary:dict[@"result"]];
-                    NSLog(@"installation : %@", [installation JSONRepesentation]);
                     [installation saveToDisk];
+                    [LBLogger logString:[NSString stringWithFormat:@"installation : %@", [installation JSONRepesentation]] toFile:@"installation"];
                     if (strongSelf.delegate && [strongSelf.delegate respondsToSelector:@selector(HTTPClientDidInitializedWithInfo:)]) {
                         [strongSelf.delegate HTTPClientDidInitializedWithInfo:@{@"installation":installation}];
                     }
@@ -185,21 +190,19 @@ NSError * ErrorWithType(HTTPClientErrorType type)
                             @"locationRadius":@(locationRecord.horizontalAccuracy),
                             @"location":[locationRecord JSONRepresentation]};
     
-    __weak typeof(self) weakSelf = self;
     [self POST:@"/data/Log"
     parameters:param
        success:^(AFHTTPRequestOperation *operation, id responseObject) {
            NSDictionary *resp = (NSDictionary * )responseObject;
            NSString *log = [NSString stringWithFormat:@"location.success: %@ , %@", resp[@"createdAt"],resp[@"objectId"]];
-           [weakSelf logStringToFile:log];
-
+           [LBLogger logString:log toFile:kLBHTTPClientLogFile];
            if (successBlock) {
                successBlock(operation, responseObject);
            }
     }
        failure:^(AFHTTPRequestOperation *operation, NSError *error) {
            NSString *log = [NSString stringWithFormat:@"location.error: %@ ", error];
-           [weakSelf logStringToFile:log];
+           [LBLogger logString:log toFile:kLBHTTPClientLogFile];
            if (failedBlock) {
                failedBlock(operation, error);
            }
@@ -244,20 +247,19 @@ NSError * ErrorWithType(HTTPClientErrorType type)
                                     @"events":JSONArray
                                     }};
     
-    __weak typeof(self) weakSelf = self;
     [self POST:@"/data/Log"
     parameters:param
        success:^(AFHTTPRequestOperation *operation, id responseObject) {
            NSDictionary *resp = (NSDictionary * )responseObject;
            NSString *log = [NSString stringWithFormat:@"senser.success: %@ , %@", resp[@"createdAt"],resp[@"objectId"]];
-           [weakSelf logStringToFile:log];
+           [LBLogger logString:log toFile:kLBHTTPClientLogFile];
            if (successBlock) {
                successBlock(operation, responseObject);
            }
        }
        failure:^(AFHTTPRequestOperation *operation, NSError *error) {
            NSString *log = [NSString stringWithFormat:@"sensor.error: %@ ", error];
-           [weakSelf logStringToFile:log];
+           [LBLogger logString:log toFile:kLBHTTPClientLogFile];
            if (failedBlock) {
                failedBlock(operation, error);
            }
@@ -332,58 +334,72 @@ NSError * ErrorWithType(HTTPClientErrorType type)
             if(!connectionError && [data length] > 0){
                 NSArray *resultArray = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:NULL];
                 if ([resultArray count]) {
-                    [self logStringToFile:@"send pending locations success."];
+                    [LBLogger logString:@"send pending locations success." toFile:kLBHTTPClientLogFile];
                     if (successBlock) {
                         successBlock(nil,nil);
                     }
                 }else{
-                    [self logStringToFile:@"send pending locations error "];
+                    [LBLogger logString:@"send pending locations error " toFile:kLBHTTPClientLogFile];
                     if (failedBlock) {
                         failedBlock(nil,nil);
                     }
                 }
             }else{
+                [LBLogger logString:@"send pending locations error " toFile:kLBHTTPClientLogFile];
                 if (failedBlock) {
                     failedBlock(nil,nil);
                 }
             }
         }
     }];
-
-
 }
 
 
 
-
-- (void)logStringToFile:(NSString *)stringToLog
++ (void)uploadCMActivityRecords:(NSArray *)activitys
+                      onSuccess:(void (^)(AFHTTPRequestOperation *operation, id responseObject))successBlock
+                      onFailure:(void (^)(AFHTTPRequestOperation *operation, NSError *error))failedBlock
 {
-    NSLog(@"%@", stringToLog);
-    
-    NSString * logFileName = [NSString stringWithFormat:@"%@.log", @"LocationTracker"];
-    
-    NSDateFormatter * dateFormatter = nil;
-    if (dateFormatter == nil) {
-        dateFormatter = [[NSDateFormatter alloc] init];
-        [dateFormatter setDateFormat:@"yyyy-MM-dd'T'HH:mm:ssZZZZ"];
-    }
-    
-    stringToLog = [NSString stringWithFormat:@"%@ --- INFO: %@\n", [dateFormatter stringFromDate:[NSDate date]], stringToLog];
-    
-    //Get the file path
-    NSString *documentsDirectory = [NSSearchPathForDirectoriesInDomains (NSDocumentDirectory, NSUserDomainMask, YES) objectAtIndex:0];
-    NSString *fileName = [documentsDirectory stringByAppendingPathComponent:logFileName];
-    
-    //Create file if it doesn't exist
-    if (![[NSFileManager defaultManager] fileExistsAtPath:fileName])
-        [[NSFileManager defaultManager] createFileAtPath:fileName contents:nil attributes:nil];
-    
-    //Append text to file (you'll probably want to add a newline every write)
-    NSFileHandle *file = [NSFileHandle fileHandleForUpdatingAtPath:fileName];
-    [file seekToEndOfFile];
-    [file writeData:[stringToLog dataUsingEncoding:NSUTF8StringEncoding]];
-    [file closeFile];
+    [[self sharedClient] uploadCMActivityRecords:activitys onSuccess:successBlock onFailure:failedBlock];
 }
+
+- (void)uploadCMActivityRecords:(NSArray *)activitys
+                  onSuccess:(void (^)(AFHTTPRequestOperation *operation, id responseObject))successBlock
+                  onFailure:(void (^)(AFHTTPRequestOperation *operation, NSError *error))failedBlock
+{
+    
+    NSMutableArray *JSONArray = [NSMutableArray arrayWithCapacity:[activitys count]];
+    [activitys enumerateObjectsUsingBlock:^(CMMotionActivity* obj, NSUInteger idx, BOOL *stop) {
+        [JSONArray addObject:[obj JSONRepresentation]];
+    }];
+    
+    NSDictionary *param = @{@"timestamp":@([[NSDate date] timeIntervalSince1970] *1000),
+                            @"type":@"cmActivitys",
+                            @"value":@{
+                                    @"activitys":JSONArray
+                                    }};
+    
+    [self POST:@"/data/Log"
+    parameters:param
+       success:^(AFHTTPRequestOperation *operation, id responseObject) {
+           NSDictionary *resp = (NSDictionary * )responseObject;
+           NSString *log = [NSString stringWithFormat:@"upload coremotion activitys success: %@ , %@", resp[@"createdAt"],resp[@"objectId"]];
+           [LBLogger logString:log toFile:kLBHTTPClientLogFile];
+           if (successBlock) {
+               successBlock(operation, responseObject);
+           }
+       }
+       failure:^(AFHTTPRequestOperation *operation, NSError *error) {
+           NSString *log = [NSString stringWithFormat:@"upload coremotion activitys error : %@ ", error];
+           [LBLogger logString:log toFile:kLBHTTPClientLogFile];
+           if (failedBlock) {
+               failedBlock(operation, error);
+           }
+       }];
+
+}
+
+
 
 
 
