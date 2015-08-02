@@ -49,12 +49,14 @@ IMP_SINGLETON
 
 - (void)onAppBecomeActive:(NSNotification *)note
 {
-    if ([LBNetReachability reachabilityForInternetConnection]) {
+    if ([[self.pendingData avaliableLocationRecords]  count]&& [[self.pendingData avaliableSensorRecords] count] && [LBNetReachability reachabilityForInternetConnection]) {
         // 上传位置信息
-        
-        
-        
-        
+        NSLog(@"pending locations : %@" ,[self.pendingData avaliableLocationRecords]);
+        [LBHTTPClient batchLocationRecords:[self.pendingData avaliableLocationRecords]  onSuccess:^(AFHTTPRequestOperation *operation, id responseObject) {
+            [self.pendingData emptyLocationRecords];
+        } onFailure:^(AFHTTPRequestOperation *operation, NSError *error) {
+            NSLog(@"upload pengding location records failed.");
+        }];
         
         // 上传传感器信息
         [LBHTTPClient uploadSensorRecords:[self.pendingData avaliableSensorRecords] onSuccess:^(AFHTTPRequestOperation *operation, id responseObject) {
@@ -62,10 +64,6 @@ IMP_SINGLETON
         } onFailure:^(AFHTTPRequestOperation *operation, NSError *error) {
             NSLog(@"upload pengding sensor rescords failed. error : %@", error);
         }];
-        
-        
-        
-        
     }
     
     

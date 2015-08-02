@@ -11,13 +11,13 @@
 #import "LBDeviceInfoManager.h"
 #import "LBDataStore.h"
 #import "LBLocationTracker.h"
+#import "LBPendingDataManager.h"
 #import <CoreMotion/CMMotionActivityManager.h>
 #import "CMMotionActivity+JSON.h"
 
 @interface LBDataCenter ()/*<LBLocationCenterDelegate>*/
 @property (nonatomic, strong) NSOperationQueue *queue;
 @property (nonatomic, strong) NSTimer *dataCollectionTimer;
-@property (nonatomic, strong) LBDataStore *dataStore;
 @property (nonatomic, strong) LBLocationTracker *locationTracker;
 @property (nonatomic, strong) LBDeviceInfoManager *deviceInfoManager;
 @property (nonatomic, strong) CMMotionActivityManager *cmaManager;
@@ -34,13 +34,13 @@ IMP_SINGLETON;
 {
     LBDataCenter *dc = [LBDataCenter sharedInstance];
     dc.delegate = delegate;
+    [LBPendingDataManager sharedInstance];
     [dc.delegate dataCenterDidInitialized];
 }
 
 - (instancetype) init
 {
     if (self = [super init]) {
-        _dataStore = [[LBDataStore alloc] init];
         _cmaManager = [[CMMotionActivityManager alloc] init];
         _locationTracker = [[LBLocationTracker alloc] init];
         _deviceInfoManager = [LBDeviceInfoManager sharedInstance];

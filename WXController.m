@@ -37,7 +37,7 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     
-	self.screenHeight = [UIScreen mainScreen].bounds.size.height;
+    self.screenHeight = [UIScreen mainScreen].bounds.size.height;
     
     UIImage *background = [UIImage imageNamed:@"bg"];
     
@@ -77,7 +77,7 @@
     header.backgroundColor = [UIColor clearColor];
     self.tableView.tableHeaderView = header;
     
-	// bottom left
+    // bottom left
     UILabel *temperatureLabel = [[UILabel alloc] initWithFrame:temperatureFrame];
     temperatureLabel.backgroundColor = [UIColor clearColor];
     temperatureLabel.textColor = [UIColor whiteColor];
@@ -117,7 +117,7 @@
     [[RACObserve([WXManager sharedManager], currentCondition)
       deliverOn:RACScheduler.mainThreadScheduler]
      subscribeNext:^(WXCondition *newCondition) {
-         temperatureLabel.text = [NSString stringWithFormat:@"%.0f°",newCondition.temperature.floatValue];
+         temperatureLabel.text = [NSString stringWithFormat:@"%.0f°",(newCondition.temperature.floatValue - 32)/1.8];
          conditionsLabel.text = [newCondition.condition capitalizedString];
          cityLabel.text = [newCondition.locationName capitalizedString];
          
@@ -128,7 +128,7 @@
                                                        RACObserve([WXManager sharedManager], currentCondition.tempHigh),
                                                        RACObserve([WXManager sharedManager], currentCondition.tempLow)]
                                               reduce:^(NSNumber *hi, NSNumber *low) {
-                                                  return [NSString  stringWithFormat:@"%.0f° / %.0f°",hi.floatValue,low.floatValue];
+                                                  return [NSString  stringWithFormat:@"%.0f° / %.0f°",(hi.floatValue -32)/1.8,(low.floatValue - 32)/1.8];
                                               }]
                             deliverOn:RACScheduler.mainThreadScheduler];
     
@@ -168,7 +168,7 @@
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
-	if (section == 0) {
+    if (section == 0) {
         return MIN([[WXManager sharedManager].hourlyForecast count], 6) + 1;
     }
     return MIN([[WXManager sharedManager].dailyForecast count], 6) + 1;
@@ -220,7 +220,7 @@
     cell.textLabel.font = [UIFont fontWithName:@"HelveticaNeue-Light" size:18];
     cell.detailTextLabel.font = [UIFont fontWithName:@"HelveticaNeue-Medium" size:18];
     cell.textLabel.text = [self.hourlyFormatter stringFromDate:weather.date];
-    cell.detailTextLabel.text = [NSString stringWithFormat:@"%.0f°",weather.temperature.floatValue];
+    cell.detailTextLabel.text = [NSString stringWithFormat:@"%.0f°",(weather.temperature.floatValue-32)/1.8];
     cell.imageView.image = [UIImage imageNamed:[weather imageName]];
     cell.imageView.contentMode = UIViewContentModeScaleAspectFit;
 }
@@ -229,7 +229,7 @@
     cell.textLabel.font = [UIFont fontWithName:@"HelveticaNeue-Light" size:18];
     cell.detailTextLabel.font = [UIFont fontWithName:@"HelveticaNeue-Medium" size:18];
     cell.textLabel.text = [self.dailyFormatter stringFromDate:weather.date];
-    cell.detailTextLabel.text = [NSString stringWithFormat:@"%.0f° / %.0f°",weather.tempHigh.floatValue,weather.tempLow.floatValue];
+    cell.detailTextLabel.text = [NSString stringWithFormat:@"%.0f° / %.0f°",(weather.tempHigh.floatValue-32)/1.8,(weather.tempLow.floatValue-32)/1.8];
     cell.imageView.image = [UIImage imageNamed:[weather imageName]];
     cell.imageView.contentMode = UIViewContentModeScaleAspectFit;
 }
@@ -237,7 +237,7 @@
 #pragma mark - UITableViewDelegate
 
 - (CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath {
-	NSInteger cellCount = [self tableView:tableView numberOfRowsInSection:indexPath.section];
+    NSInteger cellCount = [self tableView:tableView numberOfRowsInSection:indexPath.section];
     return self.screenHeight / (CGFloat)cellCount;
 }
 

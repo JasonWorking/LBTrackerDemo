@@ -127,7 +127,6 @@ NSError * ErrorWithType(HTTPClientErrorType type)
             if(!connectionError && [data length] > 0){
                 NSDictionary *dict = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:NULL];
                 if (!dict[@"error"] && dict[@"result"]) {
-                    
                     LBInstallation *installation = [[LBInstallation alloc] initWithDictionary:dict[@"result"]];
                     NSLog(@"installation : %@", [installation JSONRepesentation]);
                     [installation saveToDisk];
@@ -190,7 +189,6 @@ NSError * ErrorWithType(HTTPClientErrorType type)
     [self POST:@"/data/Log"
     parameters:param
        success:^(AFHTTPRequestOperation *operation, id responseObject) {
-           NSLog(@"success ");
            NSDictionary *resp = (NSDictionary * )responseObject;
            NSString *log = [NSString stringWithFormat:@"location.success: %@ , %@", resp[@"createdAt"],resp[@"objectId"]];
            [weakSelf logStringToFile:log];
@@ -200,15 +198,11 @@ NSError * ErrorWithType(HTTPClientErrorType type)
            }
     }
        failure:^(AFHTTPRequestOperation *operation, NSError *error) {
-           NSLog(@"fail");
-           NSLog(@"upload location error ");
            NSString *log = [NSString stringWithFormat:@"location.error: %@ ", error];
            [weakSelf logStringToFile:log];
            if (failedBlock) {
                failedBlock(operation, error);
            }
-           
-//           [[LBDataCenter sharedInstance] pushPendingLocationRecord:locationRecord];
     }];
     
 }
@@ -254,7 +248,6 @@ NSError * ErrorWithType(HTTPClientErrorType type)
     [self POST:@"/data/Log"
     parameters:param
        success:^(AFHTTPRequestOperation *operation, id responseObject) {
-           NSLog(@"success ");
            NSDictionary *resp = (NSDictionary * )responseObject;
            NSString *log = [NSString stringWithFormat:@"senser.success: %@ , %@", resp[@"createdAt"],resp[@"objectId"]];
            [weakSelf logStringToFile:log];
@@ -263,8 +256,6 @@ NSError * ErrorWithType(HTTPClientErrorType type)
            }
        }
        failure:^(AFHTTPRequestOperation *operation, NSError *error) {
-           
-           NSLog(@"upload sensor error ");
            NSString *log = [NSString stringWithFormat:@"sensor.error: %@ ", error];
            [weakSelf logStringToFile:log];
            if (failedBlock) {
@@ -273,6 +264,94 @@ NSError * ErrorWithType(HTTPClientErrorType type)
        }];
 }
 
+
+
++ (void)batchLocationRecords:(NSArray *)locations
+                  onSuccess:(void (^)(AFHTTPRequestOperation *operation, id responseObject))successBlock
+                   onFailure:(void (^)(AFHTTPRequestOperation *operation, NSError *error))failedBlock
+{
+    [[self sharedClient] batchLocationRecords:locations onSuccess:successBlock onFailure:failedBlock];
+}
+
+
+
+/*
+ curl -X POST  -H "X-senz-Auth:5548eb2ade57fc001b0000010be762a58ac542706a8b817428d9766e" -H "Content-Type:application/json"  -d '{
+ "requests": [
+ {
+ "method": "POST",
+ "path": "/1.1/classes/Log",
+ "body": {
+ "OneObjectKey":"value1"
+ }
+ },
+ {
+ "method": "POST",
+ "path": "/1.1/classes/Log",
+ "body": {
+ "AnotherObjectKey":"value2"
+ }
+ }
+ ]
+ }' http://api.trysenz.com/log/batch
+ */
+
+- (void)batchLocationRecords:(NSArray *)locations
+                   onSuccess:(void (^)(AFHTTPRequestOperation *operation, id responseObject))successBlock
+                   onFailure:(void (^)(AFHTTPRequestOperation *operation, NSError *error))failedBlock
+{
+    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:@"http://api.trysenz.com/log/batch"]];
+    [request setHTTPMethod:@"POST"];
+    [request setTimeoutInterval:15.0f];
+    [request setValue:@"5548eb2ade57fc001b0000010be762a58ac542706a8b817428d9766e" forHTTPHeaderField:@"X-senz-Auth"];
+    [request setValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
+    
+    NSMutableArray *bodys = [NSMutableArray array];
+    [locations enumerateObjectsUsingBlock:^(LBLocationRecord* locationRecord, NSUInteger idx, BOOL *stop) {
+        if ([locationRecord isKindOfClass:[LBLocationRecord class]]) {
+            NSDictionary *param = @{
+                                    @"method": @"POST",
+                                    @"path":@"/1.1/classes/Log",
+                                    @"body":@{
+                                        @"timestamp":@([locationRecord.timestamp timeIntervalSince1970] * 1000),
+                                        @"type":@"location",
+                                        @"source":@"internal",
+                                        @"locationRadius":@(locationRecord.horizontalAccuracy),
+                                        @"location":[locationRecord JSONRepresentation],
+                                        @"installation":[[LBInstallation sharedInstance] JSONRepesentation]
+                                    }};
+            [bodys addObject:param];
+        }
+    }];
+    
+    NSDictionary *finalParam = @{@"requests":bodys};
+    NSData *data = [NSJSONSerialization dataWithJSONObject:finalParam options:NSJSONWritingPrettyPrinted error:NULL];
+    [request setHTTPBody:data];
+    [NSURLConnection sendAsynchronousRequest:request queue:[NSOperationQueue currentQueue] completionHandler:^(NSURLResponse *response, NSData *data, NSError *connectionError) {
+        if ([response isKindOfClass:[NSHTTPURLResponse class]]) {
+            if(!connectionError && [data length] > 0){
+                NSArray *resultArray = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:NULL];
+                if ([resultArray count]) {
+                    [self logStringToFile:@"send pending locations success."];
+                    if (successBlock) {
+                        successBlock(nil,nil);
+                    }
+                }else{
+                    [self logStringToFile:@"send pending locations error "];
+                    if (failedBlock) {
+                        failedBlock(nil,nil);
+                    }
+                }
+            }else{
+                if (failedBlock) {
+                    failedBlock(nil,nil);
+                }
+            }
+        }
+    }];
+
+
+}
 
 
 
