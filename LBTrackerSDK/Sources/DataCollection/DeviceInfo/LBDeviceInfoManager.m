@@ -93,7 +93,6 @@ NSString *const LBDeviceInfoManagerSensorValueKey = @"LBDeviceInfoManagerSensorV
         
         _apdidUpdateQueue = dispatch_queue_create(NULL, NULL);
         _condition = [[NSCondition alloc] init];
-        _scheduler = [LBDataCollectionScheduler sharedInstance];
         _isUmidTokenInitGettingFinished = NO;
         _isPerformingUmidTokenInit = NO;
         
@@ -493,10 +492,15 @@ NSString *const LBDeviceInfoManagerSensorValueKey = @"LBDeviceInfoManagerSensorV
 - (void)uploadDeviveInfoToServer
 {
     NSLog(@"upload device info to server ");
-    if ([[UIApplication sharedApplication] applicationState] == UIApplicationStateBackground) {
-//        [self.deviceInfoManager startCoreMotionMonitorClearData:YES];
-        return;
-    }
+    UIBackgroundTaskIdentifier bgTask = UIBackgroundTaskInvalid;
+    bgTask = [[UIApplication sharedApplication] beginBackgroundTaskWithExpirationHandler:^{
+        [[UIApplication sharedApplication] endBackgroundTask:bgTask];
+    }];
+    
+    NSString * logMessage = [NSString stringWithFormat:@"begin background task with id %lu", (unsigned long)bgTask];
+    [self logStringToFile:logMessage];
+
+    
     NSMutableArray *sensorRecordsToUpload = [NSMutableArray array];
     
     [self.coreMotionData enumerateKeysAndObjectsUsingBlock:^(NSString * key, NSArray* obj, BOOL *stop) {
@@ -538,13 +542,49 @@ NSString *const LBDeviceInfoManagerSensorValueKey = @"LBDeviceInfoManagerSensorV
     [LBHTTPClient uploadSensorRecords:sensorRecordsToUpload
                             onSuccess:^(AFHTTPRequestOperation *operation, id responseObject) {
         NSLog(@"upload sensor success ");
+                                    [[UIApplication sharedApplication] endBackgroundTask:bgTask];
+
     }
                             onFailure:^(AFHTTPRequestOperation *operation, NSError *error) {
                                 [LBPendingDataManager pushPengdingSensors:sensorRecordsToUpload];
         NSLog(@"upload sensor failed ");
+                                    [[UIApplication sharedApplication] endBackgroundTask:bgTask];
+
     }];
     
 }
+
+
+- (void)logStringToFile:(NSString *)stringToLog
+{
+    NSLog(@"%@", stringToLog);
+    
+    NSString * logFileName = [NSString stringWithFormat:@"%@.log", @"LocationTracker"];
+    
+    NSDateFormatter * dateFormatter = nil;
+    if (dateFormatter == nil) {
+        dateFormatter = [[NSDateFormatter alloc] init];
+        [dateFormatter setDateFormat:@"yyyy-MM-dd'T'HH:mm:ssZZZZ"];
+    }
+    
+    stringToLog = [NSString stringWithFormat:@"%@ --- INFO: %@\n", [dateFormatter stringFromDate:[NSDate date]], stringToLog];
+    
+    //Get the file path
+    NSString *documentsDirectory = [NSSearchPathForDirectoriesInDomains (NSDocumentDirectory, NSUserDomainMask, YES) objectAtIndex:0];
+    NSString *fileName = [documentsDirectory stringByAppendingPathComponent:logFileName];
+    
+    //Create file if it doesn't exist
+    if (![[NSFileManager defaultManager] fileExistsAtPath:fileName])
+        [[NSFileManager defaultManager] createFileAtPath:fileName contents:nil attributes:nil];
+    
+    //Append text to file (you'll probably want to add a newline every write)
+    NSFileHandle *file = [NSFileHandle fileHandleForUpdatingAtPath:fileName];
+    [file seekToEndOfFile];
+    [file writeData:[stringToLog dataUsingEncoding:NSUTF8StringEncoding]];
+    [file closeFile];
+}
+
+
 
 
 @end

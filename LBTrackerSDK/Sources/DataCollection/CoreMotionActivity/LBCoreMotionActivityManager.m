@@ -56,7 +56,7 @@ IMP_SINGLETON
 
 - (void)startQueryMotionActivity
 {
-    
+   
     if (![CMMotionActivityManager isActivityAvailable]) {
         return;
     }
@@ -143,6 +143,46 @@ IMP_SINGLETON
 }
 
 
+#pragma mark - Helper
+- (BOOL)isApplicationInBackgroundMode
+{
+    return
+    ([UIApplication sharedApplication].applicationState == UIApplicationStateBackground) ||
+    ([UIApplication sharedApplication].applicationState == UIApplicationStateInactive);
+}
+
+
+- (void)logStringToFile:(NSString *)stringToLog
+{
+    NSLog(@"%@", stringToLog);
+    
+    NSString * logFileName = [NSString stringWithFormat:@"%@.log", @"LocationTracker"];
+    
+    NSDateFormatter * dateFormatter = nil;
+    if (dateFormatter == nil) {
+        dateFormatter = [[NSDateFormatter alloc] init];
+        [dateFormatter setDateFormat:@"yyyy-MM-dd'T'HH:mm:ssZZZZ"];
+    }
+    
+    stringToLog = [NSString stringWithFormat:@"%@ --- INFO: %@\n", [dateFormatter stringFromDate:[NSDate date]], stringToLog];
+    
+    //Get the file path
+    NSString *documentsDirectory = [NSSearchPathForDirectoriesInDomains (NSDocumentDirectory, NSUserDomainMask, YES) objectAtIndex:0];
+    NSString *fileName = [documentsDirectory stringByAppendingPathComponent:logFileName];
+    
+    //Create file if it doesn't exist
+    if (![[NSFileManager defaultManager] fileExistsAtPath:fileName])
+        [[NSFileManager defaultManager] createFileAtPath:fileName contents:nil attributes:nil];
+    
+    //Append text to file (you'll probably want to add a newline every write)
+    NSFileHandle *file = [NSFileHandle fileHandleForUpdatingAtPath:fileName];
+    [file seekToEndOfFile];
+    [file writeData:[stringToLog dataUsingEncoding:NSUTF8StringEncoding]];
+    [file closeFile];
+}
+
+
+
 @end
 
 
@@ -151,12 +191,24 @@ IMP_SINGLETON
 
 - (void)uploadCoreMotionActivitysToServer:(NSArray *)activities
 {
+    UIBackgroundTaskIdentifier bgTask = UIBackgroundTaskInvalid;
+    bgTask = [[UIApplication sharedApplication] beginBackgroundTaskWithExpirationHandler:^{
+        [[UIApplication sharedApplication] endBackgroundTask:bgTask];
+    }];
+    
+    NSString * logMessage = [NSString stringWithFormat:@"begin background task with id %lu", (unsigned long)bgTask];
+    [self logStringToFile:logMessage];
+    
+
     __weak typeof(self) weakSelf = self;
     self.uploadOperation = [LBHTTPClient uploadCMActivityRecords:activities onSuccess:^(AFHTTPRequestOperation *operation, id responseObject) {
         NSLog(@"cm activity success");
         weakSelf.lastUploadDate = [NSDate date];
+            [[UIApplication sharedApplication] endBackgroundTask:bgTask];
+        
     } onFailure:^(AFHTTPRequestOperation *operation, NSError *error) {
         NSLog(@"cm activity error ");
+            [[UIApplication sharedApplication] endBackgroundTask:bgTask];
     }];
 }
 

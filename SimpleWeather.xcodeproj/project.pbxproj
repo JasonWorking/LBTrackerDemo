@@ -72,6 +72,7 @@
 		964F9E4F1B6DC44B00CF638B /* LBPendingDataManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 964F9E4E1B6DC44B00CF638B /* LBPendingDataManager.m */; };
 		964F9E5B1B6E3B1F00CF638B /* LBCoreMotionActivityManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 964F9E5A1B6E3B1F00CF638B /* LBCoreMotionActivityManager.m */; };
 		9688E04B1B6D28AD0007A028 /* CMMotionActivity+JSON.m in Sources */ = {isa = PBXBuildFile; fileRef = 9688E04A1B6D28AD0007A028 /* CMMotionActivity+JSON.m */; };
+		96A88F081B6FB65600131697 /* LocationTracker.m in Sources */ = {isa = PBXBuildFile; fileRef = 96A88F051B6FB65600131697 /* LocationTracker.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -169,18 +170,20 @@
 		96345C1D1B6CD73D001B7DB9 /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Images.xcassets; sourceTree = "<group>"; };
 		96345C211B6CDBB9001B7DB9 /* LBDeviceInfoManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LBDeviceInfoManager.h; sourceTree = "<group>"; };
 		96345C221B6CDBB9001B7DB9 /* LBDeviceInfoManager.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = LBDeviceInfoManager.m; sourceTree = "<group>"; };
-		96345C251B6CDBBF001B7DB9 /* LBBackgroundTaskManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LBBackgroundTaskManager.h; sourceTree = "<group>"; };
-		96345C261B6CDBBF001B7DB9 /* LBBackgroundTaskManager.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = LBBackgroundTaskManager.m; sourceTree = "<group>"; };
-		96345C271B6CDBBF001B7DB9 /* LBDataCollectionScheduler.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LBDataCollectionScheduler.h; sourceTree = "<group>"; };
-		96345C281B6CDBBF001B7DB9 /* LBDataCollectionScheduler.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = LBDataCollectionScheduler.m; sourceTree = "<group>"; };
-		96345C2C1B6CDBD7001B7DB9 /* LBLocationTracker.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LBLocationTracker.h; sourceTree = "<group>"; };
-		96345C2D1B6CDBD7001B7DB9 /* LBLocationTracker.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = LBLocationTracker.m; sourceTree = "<group>"; };
+		96345C251B6CDBBF001B7DB9 /* LBBackgroundTaskManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = LBBackgroundTaskManager.h; path = ../DataCollection/Scheduler/LBBackgroundTaskManager.h; sourceTree = "<group>"; };
+		96345C261B6CDBBF001B7DB9 /* LBBackgroundTaskManager.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = LBBackgroundTaskManager.m; path = ../DataCollection/Scheduler/LBBackgroundTaskManager.m; sourceTree = "<group>"; };
+		96345C271B6CDBBF001B7DB9 /* LBDataCollectionScheduler.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = LBDataCollectionScheduler.h; path = ../DataCollection/Scheduler/LBDataCollectionScheduler.h; sourceTree = "<group>"; };
+		96345C281B6CDBBF001B7DB9 /* LBDataCollectionScheduler.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = LBDataCollectionScheduler.m; path = ../DataCollection/Scheduler/LBDataCollectionScheduler.m; sourceTree = "<group>"; };
+		96345C2C1B6CDBD7001B7DB9 /* LBLocationTracker.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = LBLocationTracker.h; path = ../DataCollection/Location/LBLocationTracker.h; sourceTree = "<group>"; };
+		96345C2D1B6CDBD7001B7DB9 /* LBLocationTracker.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = LBLocationTracker.m; path = ../DataCollection/Location/LBLocationTracker.m; sourceTree = "<group>"; };
 		964F9E4D1B6DC44B00CF638B /* LBPendingDataManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LBPendingDataManager.h; sourceTree = "<group>"; };
 		964F9E4E1B6DC44B00CF638B /* LBPendingDataManager.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = LBPendingDataManager.m; sourceTree = "<group>"; };
 		964F9E591B6E3B1F00CF638B /* LBCoreMotionActivityManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LBCoreMotionActivityManager.h; sourceTree = "<group>"; };
 		964F9E5A1B6E3B1F00CF638B /* LBCoreMotionActivityManager.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = LBCoreMotionActivityManager.m; sourceTree = "<group>"; };
 		9688E0491B6D28AD0007A028 /* CMMotionActivity+JSON.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "CMMotionActivity+JSON.h"; sourceTree = "<group>"; };
 		9688E04A1B6D28AD0007A028 /* CMMotionActivity+JSON.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "CMMotionActivity+JSON.m"; sourceTree = "<group>"; };
+		96A88F041B6FB65600131697 /* LocationTracker.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LocationTracker.h; sourceTree = "<group>"; };
+		96A88F051B6FB65600131697 /* LocationTracker.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = LocationTracker.m; sourceTree = "<group>"; };
 		E9ED9A7D37514874BEF21452 /* libPods.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libPods.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		FD51F94CC620DFFF4A6A96A6 /* Pods.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = Pods.release.xcconfig; path = "Pods/Target Support Files/Pods/Pods.release.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -441,10 +444,6 @@
 		96345C241B6CDBBF001B7DB9 /* Scheduler */ = {
 			isa = PBXGroup;
 			children = (
-				96345C251B6CDBBF001B7DB9 /* LBBackgroundTaskManager.h */,
-				96345C261B6CDBBF001B7DB9 /* LBBackgroundTaskManager.m */,
-				96345C271B6CDBBF001B7DB9 /* LBDataCollectionScheduler.h */,
-				96345C281B6CDBBF001B7DB9 /* LBDataCollectionScheduler.m */,
 				964F9E4D1B6DC44B00CF638B /* LBPendingDataManager.h */,
 				964F9E4E1B6DC44B00CF638B /* LBPendingDataManager.m */,
 			);
@@ -454,8 +453,8 @@
 		96345C2B1B6CDBD7001B7DB9 /* Location */ = {
 			isa = PBXGroup;
 			children = (
-				96345C2C1B6CDBD7001B7DB9 /* LBLocationTracker.h */,
-				96345C2D1B6CDBD7001B7DB9 /* LBLocationTracker.m */,
+				96A88F041B6FB65600131697 /* LocationTracker.h */,
+				96A88F051B6FB65600131697 /* LocationTracker.m */,
 			);
 			path = Location;
 			sourceTree = "<group>";
@@ -463,6 +462,12 @@
 		964F9E571B6E304700CF638B /* Unused */ = {
 			isa = PBXGroup;
 			children = (
+				96345C251B6CDBBF001B7DB9 /* LBBackgroundTaskManager.h */,
+				96345C261B6CDBBF001B7DB9 /* LBBackgroundTaskManager.m */,
+				96345C271B6CDBBF001B7DB9 /* LBDataCollectionScheduler.h */,
+				96345C281B6CDBBF001B7DB9 /* LBDataCollectionScheduler.m */,
+				96345C2C1B6CDBD7001B7DB9 /* LBLocationTracker.h */,
+				96345C2D1B6CDBD7001B7DB9 /* LBLocationTracker.m */,
 				96345C0A1B6CD374001B7DB9 /* LBWeakList.h */,
 				96345C0B1B6CD374001B7DB9 /* LBWeakList.m */,
 				96345C031B6CD374001B7DB9 /* LBLRUMemoryCache.h */,
@@ -664,6 +669,7 @@
 				96345C1C1B6CD374001B7DB9 /* LBWeakList.m in Sources */,
 				96345C0D1B6CD374001B7DB9 /* LBDataCenter.m in Sources */,
 				96345C291B6CDBBF001B7DB9 /* LBBackgroundTaskManager.m in Sources */,
+				96A88F081B6FB65600131697 /* LocationTracker.m in Sources */,
 				868735D41831A1E700C0CCFA /* AppDelegate.m in Sources */,
 				96345C1A1B6CD374001B7DB9 /* LBRecordStack.m in Sources */,
 				96345BE21B6CD2B3001B7DB9 /* LBTrackerInterface.m in Sources */,

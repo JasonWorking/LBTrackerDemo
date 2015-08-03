@@ -7,7 +7,6 @@
 //
 
 #import <Foundation/Foundation.h>
-#import "LBDataCollectionScheduler.h"
 
 extern NSString *const LBDeviceInfoManagerCoreMotionDataReadyNotification;
 extern NSString *const LBDeviceInfoManagerSensorValueKey;
@@ -20,7 +19,6 @@ typedef void(^getDeviceIdCallback)(NSString *deviceId, NSError* err);
 + (instancetype)sharedInstance;
 
 
-@property (nonatomic, strong) LBDataCollectionScheduler *scheduler;
 
 @property (nonatomic, strong ) NSString *uuid;
 @property (nonatomic, strong ) NSString *hardwareID;

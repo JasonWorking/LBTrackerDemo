@@ -20,6 +20,12 @@
 
 
 @implementation LBTrackerInterface
++ (void)load {
+    [[NSNotificationCenter defaultCenter] addObserver:[self sharedInterface]
+                                             selector:@selector(applicationDidFinishLaunching:)
+                                                 name:UIApplicationDidFinishLaunchingNotification
+                                               object:nil];
+}
 
 + (LBTrackerInterface *)sharedInterface
 {
@@ -30,6 +36,22 @@
     });
     return _sharedTracker;
 }
+
+-(void)applicationDidFinishLaunching:(NSNotification *)note{
+    if ([self appLaunchedDueToLocationChangeNotification:note]) {
+        [self startTrackerWithUploadTimeInterval:1*60];
+    }
+}
+
+- (BOOL)appLaunchedDueToLocationChangeNotification:(NSNotification *)notification {
+    NSDictionary *userInfo = notification.userInfo;
+    if ([[userInfo allKeys] containsObject:UIApplicationLaunchOptionsLocationKey]) {
+        return YES;
+    }
+    
+    return NO;
+}
+
 
 
 - (void)dealloc

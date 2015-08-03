@@ -18,6 +18,13 @@
 @implementation AppDelegate
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
+    
+    if ([launchOptions objectForKey:UIApplicationLaunchOptionsLocationKey])
+    {
+        [LBTrackerInterface startTrackerWithUploadTimeInterval:1*60];
+        return YES;
+    }
+    
     self.window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
     self.window.rootViewController = [[WXController alloc] init];
     self.window.backgroundColor = [UIColor whiteColor];

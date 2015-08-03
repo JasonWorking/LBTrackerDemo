@@ -10,18 +10,19 @@
 #import "LBDataCenter.h"
 #import "LBDeviceInfoManager.h"
 #import "LBDataStore.h"
-#import "LBLocationTracker.h"
 #import "LBPendingDataManager.h"
 #import <CoreMotion/CMMotionActivityManager.h>
 #import "CMMotionActivity+JSON.h"
 #import "LBCoreMotionActivityManager.h"
+#import "LocationTracker.h"
 
 @interface LBDataCenter ()
 @property (nonatomic, strong) NSOperationQueue *queue;
 @property (nonatomic, strong) NSTimer *dataCollectionTimer;
-@property (nonatomic, strong) LBLocationTracker *locationTracker;
+@property (nonatomic, strong) LocationTracker *locationTracker;
 @property (nonatomic, strong) LBDeviceInfoManager *deviceInfoManager;
 @property (nonatomic, strong) LBCoreMotionActivityManager *cmaManager;
+@property (nonatomic, assign) NSTimeInterval interval;
 @end
 
 @implementation LBDataCenter
@@ -43,7 +44,7 @@ IMP_SINGLETON;
 {
     if (self = [super init]) {
         _cmaManager = [[LBCoreMotionActivityManager alloc] init];
-        _locationTracker = [[LBLocationTracker alloc] init];
+        _locationTracker  = [[LocationTracker alloc] init];
         _deviceInfoManager = [LBDeviceInfoManager sharedInstance];
         _queue = [[NSOperationQueue alloc] init];
         _queue.maxConcurrentOperationCount = 4;
@@ -67,57 +68,35 @@ IMP_SINGLETON;
         self.dataCollectionTimer = nil;
     }
     
+    self.interval  = time;
     [self.cmaManager startQueryMotionActivity];
-    [self.locationTracker startLocationTrackingWithTimeInterval:MAX(time, 60)];
-//    [self.deviceInfoManager startCoreMotionMonitorClearData:YES];
-    // Fire data upload
+    [self.locationTracker startLocationTrackingWithInterval:MAX(time, 60)];
+    [self.deviceInfoManager startCoreMotionMonitorClearData:YES];
+//     Fire data upload
     self.dataCollectionTimer = [NSTimer scheduledTimerWithTimeInterval:MAX(time, 60)
                                                         target:self
                                                       selector:@selector(fireDataUpload)
                                                       userInfo:nil
-                                                       repeats:YES];
-    
+                                                       repeats:NO];
 }
 
 - (void)stopDataCollection
 {
     [self.dataCollectionTimer invalidate];
     [self.locationTracker stopLocationTracking];
-//    [self.deviceInfoManager stopCoreMotionMonitorClearData:YES];
+    [self.deviceInfoManager stopCoreMotionMonitorClearData:YES];
 }
 
 
 - (void)fireDataUpload
 {
-    [self.locationTracker uploadLocationToServer];
-//    [self.deviceInfoManager uploadDeviveInfoToServer];
-    
-//    if ([CMMotionActivityManager isActivityAvailable]) {
-//        [self.cmaManager queryActivityStartingFromDate:[NSDate dateWithTimeInterval:-(60) sinceDate:[NSDate date]]
-//                                                toDate:[NSDate date]
-//                                               toQueue:self.queue
-//                                           withHandler:^(NSArray *activities, NSError *error) {
-//                                               
-//                                               [activities enumerateObjectsUsingBlock:^(CMMotionActivity* obj, NSUInteger idx, BOOL *stop) {
-//                                                   [obj logToFilePath:nil];
-//                                               }];
-//                                               NSLog(@"activeties : %@", activities);
-//        }];
-//    }
-    
-    
-//    if ([[UIApplication sharedApplication] applicationState] != UIApplicationStateBackground) {
-//        [self.deviceInfoManager startCoreMotionMonitorClearData:YES];
-//    }
- 
-}
+    [self.deviceInfoManager uploadDeviveInfoToServer];
+    if (self.dataCollectionTimer) {
+        [self.dataCollectionTimer invalidate];
+        self.dataCollectionTimer = nil;
+    }
 
-- (void)onDataReadyForUpload
-{
-    [[LBDeviceInfoManager sharedInstance] stopCoreMotionMonitorClearData:YES];
-    NSLog(@"data ready to upload . ");
 }
-
 
 
 
