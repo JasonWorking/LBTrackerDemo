@@ -16,7 +16,6 @@ DEF_SINGLETON
 
 @property (nonatomic, strong) LBDataStore *pendingData;
 
-
 + (void)pushPengdingLocation:(LBLocationRecord *)location;
 + (void)pushPengdingSensors:(NSArray *)sensors;
 

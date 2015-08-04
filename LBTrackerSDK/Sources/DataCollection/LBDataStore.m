@@ -20,9 +20,6 @@
 @property (nonatomic, strong) LBRecordStack *locationRecords;
 @property (nonatomic, strong) LBRecordStack *sensorRecords;
 
-//@property (nonatomic, strong) LBRecordStack *pendingLocations;
-//@property (nonatomic, strong) LBRecordStack *pendingSensors;
-
 @property (nonatomic, strong) NSString *locationDatafilePath;
 @property (nonatomic, strong) NSString *sensorDatafilePath;
 
@@ -96,23 +93,6 @@
     [self.locationRecords setEmpty];
 }
 
-//
-//- (void)pushPendingLocationRecord:(LBLocationRecord *)record
-//{
-//    [self.pendingLocations pushRecord:record];
-//}
-//
-//- (LBLocationRecord *)popPendingLocationRecord
-//{
-//    return [self.pendingLocations pop];
-//}
-//
-//- (NSArray *)pendingLocationRecords
-//{
-//    return [[self.pendingLocations allRecords] copy];
-//}
-//
-//
 #pragma mark - Sensor records
 
 - (void)pushSensorRecord:(LBSenserRecord *)record;
@@ -148,32 +128,6 @@
     [self.sensorRecords setEmpty];
 }
 
-//- (void)pushPendingSensorRecord:(LBSenserRecord *)record
-//{
-//    [self.pendingSensors pushRecord:record];
-//}
-//- (void)pushPendingSensorRecords:(NSArray *)records;
-//{
-//    for (LBSenserRecord *record in records) {
-//        [self pushPendingSensorRecord:record];
-//    }
-//}
-//
-//
-//- (LBSenserRecord *)popPendingSensorRecord
-//{
-//    return [self.pendingSensors pop];
-//}
-//
-//- (NSArray *)popPendingSensorRecordsForCount:(NSUInteger)count
-//{
-//    return [self.pendingSensors popForCount:count];
-//}
-//
-//- (NSArray *)pendingSensorRecords
-//{
-//    return [[self.pendingSensors allRecords] copy];
-//}
 
 #pragma mark - Getter
 
@@ -215,23 +169,6 @@
     return _sensorRecords;
 }
 
-
-//- (LBRecordStack *)pendingLocations
-//{
-//    if (!_pendingLocations) {
-//        _pendingLocations = [[LBRecordStack alloc] initWithCapacity:kLocationRecordCountMAX];
-//    }
-//    return _pendingLocations;
-//}
-//
-//
-//- (LBRecordStack *)pendingSensors
-//{
-//    if (!_pendingSensors) {
-//        _pendingSensors = [[LBRecordStack alloc] initWithCapacity:kSensorRecordCountMAX];
-//    }
-//    return _pendingSensors;
-//}
 
 
 

@@ -8,16 +8,16 @@
 
 #import "LBHTTPClient.h"
 #import "LBRequstSerializer.h"
-#import "LBInstallation.h"
+
 #import "LBDeviceInfoManager.h"
 #import "LBLocationRecord.h"
 #import "LBSenserRecord.h"
-#import "LBDataCenter.h"
+#import "LBInstallation.h"
 #import "CMMotionActivity+JSON.h"
 
-NSString *const LBHTTPClientErrorDemain = @"LBHTTPClient.errorDomain";
-static NSString *const kLBSenzLeancloudHostURlString  = @"http://api.trysenz.com";
-static NSString *const kLBSenzAuthIDString = @"5548eb2ade57fc001b000001938f317f306f4fc254cdc7becb73821a";
+NSString *const LBHTTPClientErrorDemain              = @"LBHTTPClient.errorDomain";
+static NSString *const kLBSenzLeancloudHostURlString = @"http://api.trysenz.com";
+static NSString *const kLBSenzAuthIDStringForCreateInstallation           = @"5548eb2ade57fc001b000001938f317f306f4fc254cdc7becb73821a";
 
 
 typedef NS_ENUM(NSInteger, HTTPClientErrorType) {
@@ -115,7 +115,7 @@ NSError * ErrorWithType(HTTPClientErrorType type)
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:@"http://api.trysenz.com/utils/exchanger/createInstallation"]];
     [request setHTTPMethod:@"POST"];
     [request setTimeoutInterval:30.0f];
-    [request setValue:kLBSenzAuthIDString forHTTPHeaderField:@"X-senz-Auth"];
+    [request setValue:kLBSenzAuthIDStringForCreateInstallation forHTTPHeaderField:@"X-senz-Auth"];
     [request setValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
     
     NSData *data = [NSJSONSerialization dataWithJSONObject:param options:NSJSONWritingPrettyPrinted error:NULL];

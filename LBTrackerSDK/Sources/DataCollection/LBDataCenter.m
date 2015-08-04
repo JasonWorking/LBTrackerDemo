@@ -7,19 +7,21 @@
 //  Copyright (c) 2015年 LB. All rights reserved.
 //
 
+
+// Custom
 #import "LBDataCenter.h"
 #import "LBDeviceInfoManager.h"
-#import "LBDataStore.h"
 #import "LBPendingDataManager.h"
-#import <CoreMotion/CMMotionActivityManager.h>
-#import "CMMotionActivity+JSON.h"
 #import "LBCoreMotionActivityManager.h"
-#import "LocationTracker.h"
+#import "LBLocationTracker.h"
+
+// System
+#import <CoreMotion/CMMotionActivityManager.h>
 
 @interface LBDataCenter ()
 @property (nonatomic, strong) NSOperationQueue *queue;
 @property (nonatomic, strong) NSTimer *dataCollectionTimer;
-@property (nonatomic, strong) LocationTracker *locationTracker;
+@property (nonatomic, strong) LBLocationTracker *locationTracker;
 @property (nonatomic, strong) LBDeviceInfoManager *deviceInfoManager;
 @property (nonatomic, strong) LBCoreMotionActivityManager *cmaManager;
 @property (nonatomic, assign) NSTimeInterval interval;
@@ -27,7 +29,7 @@
 
 @implementation LBDataCenter
 
-#pragma mark - Init 
+#pragma mark - Life Cycle
 
 
 IMP_SINGLETON;
@@ -43,9 +45,9 @@ IMP_SINGLETON;
 - (instancetype) init
 {
     if (self = [super init]) {
-        _cmaManager = [[LBCoreMotionActivityManager alloc] init];
-        _locationTracker  = [[LocationTracker alloc] init];
-        _deviceInfoManager = [LBDeviceInfoManager sharedInstance];
+        _cmaManager        = [[LBCoreMotionActivityManager alloc] init];
+        _locationTracker   = [[LBLocationTracker alloc] init];
+        _deviceInfoManager = [[LBDeviceInfoManager alloc] init];
         _queue = [[NSOperationQueue alloc] init];
         _queue.maxConcurrentOperationCount = 4;
     }
@@ -72,12 +74,12 @@ IMP_SINGLETON;
     [self.cmaManager startQueryMotionActivity];
     [self.locationTracker startLocationTrackingWithInterval:MAX(time, 60)];
     [self.deviceInfoManager startCoreMotionMonitorClearData:YES];
-//     Fire data upload
-    self.dataCollectionTimer = [NSTimer scheduledTimerWithTimeInterval:MAX(time, 60)
+//     Fire device info data upload, device Info manager auto stoped when 10 sensor records is collected.
+    self.dataCollectionTimer = [NSTimer scheduledTimerWithTimeInterval:20
                                                         target:self
                                                       selector:@selector(fireDataUpload)
                                                       userInfo:nil
-                                                       repeats:NO];
+                                                       repeats:YES];
 }
 
 - (void)stopDataCollection
@@ -91,10 +93,7 @@ IMP_SINGLETON;
 - (void)fireDataUpload
 {
     [self.deviceInfoManager uploadDeviveInfoToServer];
-    if (self.dataCollectionTimer) {
-        [self.dataCollectionTimer invalidate];
-        self.dataCollectionTimer = nil;
-    }
+    [self.deviceInfoManager startCoreMotionMonitorClearData:NO];
 
 }
 

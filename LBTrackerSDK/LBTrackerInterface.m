@@ -20,6 +20,11 @@
 
 
 @implementation LBTrackerInterface
+
+
+
+#pragma mark - Life Cycle
+
 + (void)load {
     [[NSNotificationCenter defaultCenter] addObserver:[self sharedInterface]
                                              selector:@selector(applicationDidFinishLaunching:)
@@ -59,6 +64,10 @@
     [[NSNotificationCenter defaultCenter] removeObserver:self];
 }
 
+
+
+
+#pragma mark - Public
 + (void)initalizeTrackerWithDelegate:(id<LBTrackerDelegate>)delegate appID:(NSString *)appID;
 {
     [[self sharedInterface] initalizeTrackerWithDelegate:delegate appID:appID];

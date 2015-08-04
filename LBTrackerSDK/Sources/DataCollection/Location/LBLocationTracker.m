@@ -1,320 +1,398 @@
 //
-//  LBLocationTracker.m
-//  BgTracker
+//  LocationTracker.m
+//  Location
 //
-//  Created by Jason on 15/7/27.
-//  Copyright (c) 2015年 Gong Zhang. All rights reserved.
+//  Created by Jason
+//  Copyright (c) 2014 LB All rights reserved.
 //
 
 #import "LBLocationTracker.h"
 #import "LBHTTPClient.h"
+#import <objc/runtime.h>
 #import "LBLocationRecord.h"
-#import "LBSenserRecord.h"
-#import "LBPendingDataManager.h"
-//#import "LBDeviceInfoManager.h"
-#import <CoreMotion/CoreMotion.h>
-#define LATITUDE @"latitude"
-#define LONGITUDE @"longitude"
-#define ACCURACY @"theAccuracy"
 
-#define IS_OS_8_OR_LATER ([[[UIDevice currentDevice] systemVersion] floatValue] >= 8.0)
-/**重力*/
-#define GravityKey           @"Gravity"
+#define LOCATION_TRACKER_FOREGROUND_CALLBACK_INTERVAL   30                      //seconds, background mode, usually slower
+#define LOCATION_TRACKER_BACKGROUND_CALLBACK_INTERVAL   120                     //seconds, foreground mode, usually faster
+#define LOCATION_TRACKER_DEFAULT_INTERVAL               30                      //seconds, foreground mode only
+#define LOCATION_TRACKER_ACTIVE_DURATION                8                       //seconds, foreground mode only
+#define LOCATION_TRACKER_MAX_LOCATION_AGE               30                      //seconds
+#define LOCATION_TRACKER_MAX_LOCATION_HISTORY           100
+#define LOCATION_TRACKER_REJECT_LOCATION_ACCURACY       1000                    //meters
+#define LOCATION_TRACKER_DISTANCE_FILTER                kCLDistanceFilterNone   //100       //meters, not applicable for significant change service
+#define LOCATION_TRACKER_ACCURACY_CLASS                 kCLLocationAccuracyHundredMeters    //not applicable for significant change service
 
-/**加速度*/
-#define AccelerometerKey     @"Accelerometer"
+@interface LBLocationTracker() <CLLocationManagerDelegate>
+@property (nonatomic, assign) NSTimeInterval updateInterval;
+@property (nonatomic, strong) NSDate * lastCallbackTime;
 
-/**陀螺仪*/
-#define GyroscopeKey         @"Gyroscope"
+@property (nonatomic, strong) NSTimer * foregroundTimer;
+@property (nonatomic, strong) NSTimer * foregroundDelayedStopTimer;
+@end
 
-/**磁场*/
-#define MagnetometerKey      @"Magnetometer"
+@implementation LBLocationTracker
 
-/**最多的次数*/
-#define MAX_NUMBER           10
-
-/**间隔秒数*/
-#define UPDATE_INTERVAL      3
-
-//
-//@interface LBLocationTracker ()
-//
-//
-//@property (nonatomic, strong)   CMMotionManager * motionManager;
-//
-//@end
-
-@implementation LBLocationTracker{
-    CMMotionManager *motionManager;
-    NSMutableDictionary *coremotionData;
-}
-
-+ (CLLocationManager *)sharedLocationManager {
-    static CLLocationManager *_locationManager;
-    
-    @synchronized(self) {
-        if (_locationManager == nil) {
-            _locationManager = [[CLLocationManager alloc] init];
-            _locationManager.desiredAccuracy = kCLLocationAccuracyBestForNavigation;
-        }
-    }
-    return _locationManager;
-}
-
-- (id)init {
-    if (self==[super init]) {
-        //Get the share model and also initialize myLocationArray
-        self.scheduler = [LBDataCollectionScheduler sharedInstance];
-        self.scheduler.myLocationArray = [[NSMutableArray alloc]init];
-        self.dataColletionInterval = 1*60;
-        coremotionData = [NSMutableDictionary dictionary];
-        [coremotionData setObject:[NSMutableArray array] forKey:GravityKey];
-        [coremotionData setObject:[NSMutableArray array] forKey:AccelerometerKey];
-        [coremotionData setObject:[NSMutableArray array] forKey:GyroscopeKey];
-        [coremotionData setObject:[NSMutableArray array] forKey:MagnetometerKey];
-        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(applicationEnterBackground) name:UIApplicationDidEnterBackgroundNotification object:nil];
-    }
-    return self;
-}
-
--(void)applicationEnterBackground{
-    CLLocationManager *locationManager = [LBLocationTracker sharedLocationManager];
-    locationManager.delegate = self;
-    locationManager.desiredAccuracy = kCLLocationAccuracyBestForNavigation;
-    locationManager.distanceFilter = kCLDistanceFilterNone;
-    
-    if(IS_OS_8_OR_LATER) {
-        [locationManager requestAlwaysAuthorization];
-    }
-    [locationManager startUpdatingLocation];
-    
-    //Use the BackgroundTaskManager to manage all the background Task
-    self.scheduler.bgTask = [LBBackgroundTaskManager sharedBackgroundTaskManager];
-    [self.scheduler.bgTask beginNewBackgroundTask];
-}
-
-- (void) restartLocationUpdates
+//Singleton for this class
++ (instancetype)sharedInstance
 {
-    NSLog(@"restartLocationUpdates");
-    
-    if (self.scheduler.locationTimer) {
-        [self.scheduler.locationTimer invalidate];
-        self.scheduler.locationTimer = nil;
-    }
-    
-    CLLocationManager *locationManager = [LBLocationTracker sharedLocationManager];
-    locationManager.delegate = self;
-    locationManager.desiredAccuracy = kCLLocationAccuracyBestForNavigation;
-    locationManager.distanceFilter = kCLDistanceFilterNone;
-    
-    if(IS_OS_8_OR_LATER) {
-        [locationManager requestAlwaysAuthorization];
-    }
-    [locationManager startUpdatingLocation];
+    static dispatch_once_t pred;
+    static id __singleton = nil;
+    dispatch_once(&pred, ^{
+        __singleton = [[self alloc] init];
+    });
+    return __singleton;
 }
 
-
-
-- (void)startLocationTrackingWithTimeInterval:(NSTimeInterval)time
+- (id)init
 {
-    self.dataColletionInterval = MAX(10, time);
-    [self startLocationTracking];
+    self = [super init];
+    if (self == nil)
+        return nil;
+
+    //Initialize internal variables
+    self.updateInterval = LOCATION_TRACKER_DEFAULT_INTERVAL;
+    self.minimumCallBackIntervalForeground = LOCATION_TRACKER_FOREGROUND_CALLBACK_INTERVAL;
+    self.minimumCallBackIntervalBackground = LOCATION_TRACKER_BACKGROUND_CALLBACK_INTERVAL;
+    self.myLocationArray = [NSMutableArray array];
+    self.maxLocationHistory = LOCATION_TRACKER_MAX_LOCATION_HISTORY;
+    
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(applicationDidEnterBackground)
+                                                 name:UIApplicationDidEnterBackgroundNotification
+                                               object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(applicationDidBecomeActive)
+                                                 name:UIApplicationDidBecomeActiveNotification
+                                               object:nil];
+	return self;
 }
 
-- (void)startLocationTracking {
-    NSLog(@"startLocationTracking");
-    
-    if ([CLLocationManager locationServicesEnabled] == NO) {
-        NSLog(@"locationServicesEnabled false");
-        UIAlertView *servicesDisabledAlert = [[UIAlertView alloc] initWithTitle:@"Location Services Disabled" message:@"You currently have all location services for this device disabled" delegate:nil cancelButtonTitle:@"OK" otherButtonTitles:nil];
-        [servicesDisabledAlert show];
-    } else {
-        CLAuthorizationStatus authorizationStatus= [CLLocationManager authorizationStatus];
-        
-        if(authorizationStatus == kCLAuthorizationStatusDenied || authorizationStatus == kCLAuthorizationStatusRestricted){
-            NSLog(@"authorizationStatus failed");
-        } else {
-            NSLog(@"authorizationStatus authorized");
-            CLLocationManager *locationManager = [LBLocationTracker sharedLocationManager];
-            locationManager.delegate = self;
-            locationManager.desiredAccuracy = kCLLocationAccuracyBestForNavigation;
-            locationManager.distanceFilter = kCLDistanceFilterNone;
-            
-            if(IS_OS_8_OR_LATER) {
-                [locationManager requestAlwaysAuthorization];
-            }
-            [locationManager startUpdatingLocation];
-        }
-    }
+//Singleton for the CLLocationManager instance variable
++ (CLLocationManager *)sharedLocationManager;
+{
+	static CLLocationManager *_locationManager;
+	
+	@synchronized(self)
+    {
+		if (_locationManager == nil) {
+			_locationManager = [[CLLocationManager alloc] init];
+            _locationManager.desiredAccuracy = LOCATION_TRACKER_ACCURACY_CLASS;
+		}
+	}
+	return _locationManager;
 }
 
 
-- (void)stopLocationTracking {
-    NSLog(@"stopLocationTracking");
+
+#pragma mark - Handle application states
+
+- (void)applicationDidEnterBackground
+{
+    [self logStringToFile:@"applicationDidEnterBackground"];
     
-    if (self.scheduler.locationTimer) {
-        [self.scheduler.locationTimer invalidate];
-        self.scheduler.locationTimer = nil;
-    }
+    [self cleanUpAllTimers];
     
-    CLLocationManager *locationManager = [LBLocationTracker sharedLocationManager];
+    self.lastCallbackTime = nil;
+    self.myLastLocationTime = nil;
+    
+    CLLocationManager *locationManager = [[self class] sharedLocationManager];
     [locationManager stopUpdatingLocation];
+    [locationManager startMonitoringSignificantLocationChanges];
 }
 
-#pragma mark - CLLocationManagerDelegate Methods
+- (void)applicationDidBecomeActive
+{
+    [self logStringToFile:@"applicationDidBecomeActive"];
 
--(void)locationManager:(CLLocationManager *)manager didUpdateLocations:(NSArray *)locations{
+    [self cleanUpAllTimers];
+
+    self.lastCallbackTime = nil;
+    self.myLastLocationTime = nil;
     
-    
-    //    [[LBDeviceInfoManager sharedInstance] startCoreMotionMonitorClearData:YES];
-    
-    if (!coremotionData) {
-        coremotionData = [NSMutableDictionary dictionary];
-        [coremotionData setObject:[NSMutableArray array] forKey:GravityKey];
-        [coremotionData setObject:[NSMutableArray array] forKey:AccelerometerKey];
-        [coremotionData setObject:[NSMutableArray array] forKey:GyroscopeKey];
-        [coremotionData setObject:[NSMutableArray array] forKey:MagnetometerKey];
+    CLLocationManager *locationManager = [[self class] sharedLocationManager];
+    [locationManager stopMonitoringSignificantLocationChanges];
+
+    [self restartLocationUpdates];
+}
+
+
+
+#pragma mark - Simple helpers
+
+- (void)cleanUpAllTimers
+{
+    if (self.foregroundTimer) {
+        [self.foregroundTimer invalidate];
+        self.foregroundTimer = nil;
     }
-    
-    if (motionManager) {
-        if (motionManager.accelerometerAvailable) {
-            CMDeviceMotion *motion = motionManager.deviceMotion;
-            if ([[coremotionData objectForKey:AccelerometerKey] count] < MAX_NUMBER && motion) {
-                NSLog(@"acc: %@",@{@"x":[NSNumber numberWithDouble:motion.userAcceleration.x],@"y":[NSNumber numberWithDouble:motion.userAcceleration.y],@"z":[NSNumber numberWithDouble:motion.userAcceleration.z]});
-                [[coremotionData objectForKey:AccelerometerKey] addObject:motion];
-            }
-            
-            if ([[coremotionData objectForKey:GravityKey] count] < MAX_NUMBER && motion) {
-                NSLog(@"grav: %@",@{@"x":[NSNumber numberWithDouble:motion.gravity.x],@"y":[NSNumber numberWithDouble:motion.gravity.y],@"z":[NSNumber numberWithDouble:motion.gravity.z]});
-                [[coremotionData objectForKey:GravityKey] addObject:motion];
-            }
-        }
-        
-        if (motionManager.isGyroAvailable) {
-            CMGyroData *gyroData = motionManager.gyroData;
-            if ([[coremotionData objectForKey:GyroscopeKey] count] < MAX_NUMBER && gyroData) {
-                NSLog(@"gyro: %@",@{@"x":[NSNumber numberWithDouble:gyroData.rotationRate.x],@"y":[NSNumber numberWithDouble:gyroData.rotationRate.y],@"z":[NSNumber numberWithDouble:gyroData.rotationRate.z]});
-                [[coremotionData objectForKey:GyroscopeKey] addObject:gyroData];
-            }
-        }
-        
-        if (motionManager.isMagnetometerAvailable) {
-            CMMagnetometerData *magnetometerData = motionManager.magnetometerData;
-            if ([[coremotionData objectForKey:MagnetometerKey] count] < MAX_NUMBER && magnetometerData) {
-                NSLog(@"magnet: %@",@{@"x":[NSNumber numberWithDouble:magnetometerData.magneticField.x],@"y":[NSNumber numberWithDouble:magnetometerData.magneticField.y],@"z":[NSNumber numberWithDouble:magnetometerData.magneticField.z]});
-                [[coremotionData objectForKey:MagnetometerKey] addObject:magnetometerData];
-            }
-        }
+    if (self.foregroundDelayedStopTimer) {
+        [self.foregroundDelayedStopTimer invalidate];
+        self.foregroundDelayedStopTimer = nil;
     }
+}
+
+- (BOOL)isApplicationInBackgroundMode
+{
+    return
+    ([UIApplication sharedApplication].applicationState == UIApplicationStateBackground) ||
+    ([UIApplication sharedApplication].applicationState == UIApplicationStateInactive);
+}
+
+/*
+ * Pick out the location with best accuracy in the array
+ */
+- (CLLocation *)filterBestLocationFromArray:(NSArray *)locationsArray
+{
+    CLLocation * bestLocation = nil;
     
-    
-    NSLog(@"locationManager didUpdateLocations");
-    
-    for(int i=0;i<locations.count;i++){
-        CLLocation * newLocation = [locations objectAtIndex:i];
-        CLLocationCoordinate2D theLocation = newLocation.coordinate;
-        CLLocationAccuracy theAccuracy = newLocation.horizontalAccuracy;
+    for (CLLocation * location in locationsArray)
+    {
+        //Skip locations older than 30 seconds
+        NSTimeInterval locationAge = -[location.timestamp timeIntervalSinceNow];
+        if (locationAge > LOCATION_TRACKER_MAX_LOCATION_AGE)
+            continue;
+        CLLocationCoordinate2D theLocation = location.coordinate;
+        CLLocationAccuracy theAccuracy = location.horizontalAccuracy;
         
-        NSTimeInterval locationAge = -[newLocation.timestamp timeIntervalSinceNow];
+        //Sanity checks
+        if (theAccuracy <= 0 || theAccuracy > LOCATION_TRACKER_REJECT_LOCATION_ACCURACY)
+            continue;
+        if (theLocation.latitude == 0.0 || theLocation.longitude == 0.0)
+            continue;
         
-        if (locationAge > 30.0)
-        {
+        //First time
+        if (bestLocation == nil) {
+            bestLocation = location;
             continue;
         }
         
-        //Select only valid location and also location with good accuracy
-        if(newLocation!=nil&&theAccuracy>0
-           &&theAccuracy<2000
-           &&(!(theLocation.latitude==0.0&&theLocation.longitude==0.0))){
-            
-            self.myLastLocation = theLocation;
-            self.myLastLocationAccuracy= theAccuracy;
-            
-            NSMutableDictionary * dict = [[NSMutableDictionary alloc]init];
-            [dict setObject:[NSNumber numberWithFloat:theLocation.latitude] forKey:@"latitude"];
-            [dict setObject:[NSNumber numberWithFloat:theLocation.longitude] forKey:@"longitude"];
-            [dict setObject:[NSNumber numberWithFloat:theAccuracy] forKey:@"theAccuracy"];
-            
-            //Add the vallid location with good accuracy into an array
-            //Every 1 minute, I will select the best location based on accuracy and send to server
-            [self.scheduler.myLocationArray addObject:dict];
-        }
+        //identified location is better than this
+        if (bestLocation.horizontalAccuracy > location.horizontalAccuracy)
+            continue;
+        
+        bestLocation = location;
     }
     
-    //If the timer still valid, return it (Will not run the code below)
-    if (self.scheduler.locationTimer) {
+    return bestLocation;
+}
+
+
+
+#pragma mark - Public interface
+
+- (void)startLocationTracking
+{
+    [self startLocationTrackingWithInterval:LOCATION_TRACKER_DEFAULT_INTERVAL];
+}
+
+- (void)startLocationTrackingWithInterval:(NSTimeInterval)seconds
+{
+    if (seconds < 10)
+        seconds = LOCATION_TRACKER_DEFAULT_INTERVAL;
+    self.updateInterval = seconds;
+    
+    [self logStringToFile:@"startLocationTracking"];
+    
+    //Enabled, but might not be authorized yet (first time)
+	if ([CLLocationManager locationServicesEnabled] == NO)
+    {
+        [self logStringToFile:@"locationServicesEnabled false"];
+        
+		UIAlertView *servicesDisabledAlert = [[UIAlertView alloc] initWithTitle:@"Location Services Disabled"
+                                                                        message:@"You currently have all location services for this device disabled"
+                                                                       delegate:nil
+                                                              cancelButtonTitle:@"OK"
+                                                              otherButtonTitles:nil];
+		[servicesDisabledAlert show];
+        return;
+	}
+    
+    //Has been denied by user before
+    CLAuthorizationStatus authorizationStatus = [CLLocationManager authorizationStatus];
+    if (authorizationStatus == kCLAuthorizationStatusDenied || authorizationStatus == kCLAuthorizationStatusRestricted)
+    {
+        [self logStringToFile:@"authorizationStatus failed"];
         return;
     }
     
-    self.scheduler.bgTask = [LBBackgroundTaskManager sharedBackgroundTaskManager];
-    [self.scheduler.bgTask beginNewBackgroundTask];
+    [self logStringToFile:@"authorizationStatus authorized"];
+    CLLocationManager *locationManager = [[self class] sharedLocationManager];
+    locationManager.delegate = self;
+    locationManager.desiredAccuracy = LOCATION_TRACKER_ACCURACY_CLASS;      //not applicable for significant change service
+    locationManager.distanceFilter = LOCATION_TRACKER_DISTANCE_FILTER;      //not applicable for significant change service
+    if ([self isApplicationInBackgroundMode])       [locationManager startMonitoringSignificantLocationChanges];
+    else                                            [locationManager startUpdatingLocation];
+}
+
+- (void)stopLocationTracking
+{
+    [self logStringToFile:@"stopLocationTracking"];
     
-    //Restart the locationMaanger after X minute
-    self.scheduler.locationTimer = [NSTimer scheduledTimerWithTimeInterval:self.dataColletionInterval target:self
-                                                                  selector:@selector(restartLocationUpdates)
-                                                                  userInfo:nil
-                                                                   repeats:NO];
+    [self cleanUpAllTimers];
+    
+	CLLocationManager *locationManager = [[self class] sharedLocationManager];
+	[locationManager stopUpdatingLocation];
+}
+
+- (void)restartLocationUpdates
+{
+    [self logStringToFile:@"restartLocationUpdates"];
+    
+    [self cleanUpAllTimers];
+
+    //Enabled, but might not be authorized yet (first time)
+	if ([CLLocationManager locationServicesEnabled] == NO)
+    {
+        [self logStringToFile:@"locationServicesEnabled false"];
+        return;
+	}
+    
+    //First time, we haven't asked user yet, don't start anything
+    CLAuthorizationStatus authorizationStatus = [CLLocationManager authorizationStatus];
+    if (authorizationStatus == kCLAuthorizationStatusNotDetermined)
+    {
+        [self logStringToFile:@"authorizationStatus kCLAuthorizationStatusNotDetermined"];
+        return;
+    }
+    
+    if (authorizationStatus == kCLAuthorizationStatusDenied || authorizationStatus == kCLAuthorizationStatusRestricted)
+    {
+        [self logStringToFile:@"authorizationStatus failed"];
+        return;
+    }
+    
+    CLLocationManager * locationManager = [[self class] sharedLocationManager];
+    locationManager.delegate = self;
+    locationManager.desiredAccuracy = LOCATION_TRACKER_ACCURACY_CLASS;      //not applicable for significant change service
+    locationManager.distanceFilter = LOCATION_TRACKER_DISTANCE_FILTER;      //not applicable for significant change service
+    if ([self isApplicationInBackgroundMode])       [locationManager startMonitoringSignificantLocationChanges];
+    else                                            [locationManager startUpdatingLocation];
+}
+
+
+
+#pragma mark - CLLocationManagerDelegate Methods
+
+/*
+ Note: this will be fired immediately right after startMonitoringSignificantLocationChanges, if...
+ the application is waken up with UIApplicationLaunchOptionsLocationKey option
+*/
+- (void)locationManager:(CLLocationManager *)manager didUpdateLocations:(NSArray *)locations
+{
+    NSTimeInterval timeSinceLastLocationUpdate = fabsf([self.myLastLocationTime timeIntervalSinceNow]);
+    self.myLastLocationTime = [NSDate date];
+    
+    //Special handling when app in background mode
+    if ([self isApplicationInBackgroundMode])
+    {
+        NSString * logMessage = [NSString stringWithFormat:@"locationManager didUpdateLocations in background mode (%lu locations, %.2f secs)", (unsigned long)[locations count], timeSinceLastLocationUpdate];
+        [self logStringToFile:logMessage];
+    }
+    else
+    {
+        NSString * logMessage = [NSString stringWithFormat:@"locationManager didUpdateLocations in foreground mode (%lu locations, %.2f secs)", (unsigned long)[locations count], timeSinceLastLocationUpdate];
+        [self logStringToFile:logMessage];
+    }
+    
+    //Sanity check
+    CLLocation * newLocation = [self filterBestLocationFromArray:locations];
+    if (newLocation == nil)
+        return;
+    
+    //Keep history of past locations
+    self.myLastLocation = newLocation;
+    [self.myLocationArray addObject:newLocation];
+    while ([self.myLocationArray count] > self.maxLocationHistory && self.maxLocationHistory > 0)
+        [self.myLocationArray removeObjectAtIndex:0];
+    
+    //Debug info
+    CLLocationCoordinate2D theLocation = newLocation.coordinate;
+    NSString * logMessage = [NSString stringWithFormat:@"%.7f, %.7f Accuracy: %.2f", theLocation.latitude, theLocation.longitude, newLocation.horizontalAccuracy];
+    [self logStringToFile:logMessage];
+    
+    //Callback to whoever is listening (most likely a VC to update UI)
+    NSTimeInterval deltaCallback = fabs([self.lastCallbackTime timeIntervalSinceNow]);
+    NSTimeInterval minDeltaCallback = [self isApplicationInBackgroundMode] ? self.minimumCallBackIntervalBackground : self.minimumCallBackIntervalForeground;
+    if (self.lastCallbackTime == nil || deltaCallback > minDeltaCallback) {
+        self.lastCallbackTime = [NSDate date];
+        [self updateLocationToServerInBackground:newLocation];
+        [self performCallbackBlockWithObject:newLocation];
+    }
+    
+    if ([self isApplicationInBackgroundMode])
+        return;
+    
+    //-------------------------------------------------------------------------------------------------
+    //The below logic is for when the app is in foreground mode
+    //only activate location service for 10 seconds every 1 minute, to save battery
+    
+    //If the timer still valid (meaning still within 1 minute update interval)
+    //This is used as a once-per-minute flag for all the codes below
+    if (self.foregroundTimer)
+        return;
+    
+    //Wait for 1 minute then restart the locationManger (foreground)
+    self.foregroundTimer = [NSTimer scheduledTimerWithTimeInterval:self.updateInterval
+                                                            target:self
+                                                          selector:@selector(restartLocationUpdates)
+                                                          userInfo:nil
+                                                           repeats:NO];
     
     //Will only stop the locationManager after 10 seconds, so that we can get some accurate locations
     //The location manager will only operate for 10 seconds to save battery
-    if (self.scheduler.delay10Seconds) {
-        [self.scheduler.delay10Seconds invalidate];
-        self.scheduler.delay10Seconds = nil;
-    }
-    
-    self.scheduler.delay10Seconds = [NSTimer scheduledTimerWithTimeInterval:10 target:self
-                                                                   selector:@selector(stopLocationDelayBy10Seconds)
-                                                                   userInfo:nil
-                                                                    repeats:NO];
-    
-    motionManager=[[CMMotionManager alloc] init];
-    motionManager.deviceMotionUpdateInterval = 1;
-    if (motionManager.deviceMotionAvailable) {
-        [motionManager startDeviceMotionUpdates];
-    }
-    
-    if (motionManager.isGyroAvailable) {
-        motionManager.gyroUpdateInterval = 1;
-        [motionManager startGyroUpdates];
-    }
-    
-    if (motionManager.isMagnetometerAvailable) {
-        motionManager.magnetometerUpdateInterval = 1;
-        [motionManager startMagnetometerUpdates];
-    }
+    self.foregroundDelayedStopTimer = [NSTimer scheduledTimerWithTimeInterval:LOCATION_TRACKER_ACTIVE_DURATION
+                                                                       target:self
+                                                                     selector:@selector(stopLocationAfter10Seconds)
+                                                                     userInfo:nil
+                                                                      repeats:NO];
 }
 
-
-//Stop the locationManager
--(void)stopLocationDelayBy10Seconds{
+/*
+ The location service is only activated for 10 seconds to save battery
+ */
+- (void)stopLocationAfter10Seconds
+{
+    if (self.foregroundDelayedStopTimer) {
+        [self.foregroundDelayedStopTimer invalidate];
+        self.foregroundDelayedStopTimer = nil;
+    }
     
-    [motionManager stopDeviceMotionUpdates];
-    [motionManager  stopMagnetometerUpdates];
-    [motionManager stopGyroUpdates];
-    motionManager=nil;
+    if ([self isApplicationInBackgroundMode])
+        return;
     
-    CLLocationManager *locationManager = [LBLocationTracker sharedLocationManager];
+    CLLocationManager *locationManager = [[self class] sharedLocationManager];
     [locationManager stopUpdatingLocation];
     
-    NSLog(@"locationManager stop Updating after 10 seconds");
+    [self logStringToFile:@"locationManager stop Updating after 10 seconds"];
+    
+    //Callback another time for this cycle since this should be the most accurate location
+    [self updateLocationToServerInBackground:self.myLastLocation];
+    [self performCallbackBlockWithObject:self.myLastLocation];
 }
 
-
-- (void)locationManager: (CLLocationManager *)manager didFailWithError: (NSError *)error
+- (void)locationManager:(CLLocationManager *)manager didFailWithError:(NSError *)error
 {
-    // NSLog(@"locationManager error:%@",error);
-    
-    switch([error code])
+    switch ([error code])
     {
         case kCLErrorNetwork: // general, network-related error
         {
-            UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Network Error" message:@"Please check your network connection." delegate:self cancelButtonTitle:@"Ok" otherButtonTitles:nil, nil];
+            UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Network Error"
+                                                            message:@"Please check your network connection."
+                                                           delegate:self
+                                                  cancelButtonTitle:@"OK"
+                                                  otherButtonTitles:nil];
             [alert show];
+            [self logStringToFile:@"kCLErrorNetwork"];
         }
             break;
-        case kCLErrorDenied:{
-            UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Enable Location Service" message:@"You have to enable the Location Service to use this App. To enable, please go to Settings->Privacy->Location Services" delegate:self cancelButtonTitle:@"Ok" otherButtonTitles:nil, nil];
+        case kCLErrorDenied:
+        {
+            UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Enable Location Service"
+                                                            message:@"You have to enable the Location Service to use this App. To enable, please go to Settings->Privacy->Location Services->LocationTracker (ON)"
+                                                           delegate:self
+                                                  cancelButtonTitle:@"OK"
+                                                  otherButtonTitles:nil];
             [alert show];
+            [self logStringToFile:@"kCLErrorDenied"];
         }
             break;
         default:
@@ -326,122 +404,99 @@
 }
 
 
-@end
+#pragma mark - Logging for Debug
 
-
-
-
-@implementation LBLocationTracker (Network)
-
-//Send the location to Server
-- (void)uploadLocationToServer {
+- (void)logStringToFile:(NSString *)stringToLog
+{
+    NSLog(@"%@", stringToLog);
     
-    NSLog(@"updateLocationToServer");
+    NSString * logFileName = [NSString stringWithFormat:@"%@.log", @"LBLocationTracker"];
     
-    // Find the best location from the array based on accuracy
-    NSMutableDictionary * myBestLocation = [[NSMutableDictionary alloc]init];
-    
-    for(int i=0;i<self.scheduler.myLocationArray.count;i++){
-        NSMutableDictionary * currentLocation = [self.scheduler.myLocationArray objectAtIndex:i];
-        
-        if(i==0)
-            myBestLocation = currentLocation;
-        else{
-            if([[currentLocation objectForKey:ACCURACY]floatValue]<=[[myBestLocation objectForKey:ACCURACY]floatValue]){
-                myBestLocation = currentLocation;
-            }
-        }
-    }
-    NSLog(@"My Best location:%@",myBestLocation);
-    
-    //If the array is 0, get the last location
-    //Sometimes due to network issue or unknown reason, you could not get the location during that  period, the best you can do is sending the last known location to the server
-    if(self.scheduler.myLocationArray.count==0)
-    {
-        NSLog(@"Unable to get location, use the last known location");
-        
-        self.myLocation=self.myLastLocation;
-        self.myLocationAccuracy=self.myLastLocationAccuracy;
-        
-    }else{
-        CLLocationCoordinate2D theBestLocation;
-        theBestLocation.latitude =[[myBestLocation objectForKey:LATITUDE]floatValue];
-        theBestLocation.longitude =[[myBestLocation objectForKey:LONGITUDE]floatValue];
-        self.myLocation=theBestLocation;
-        self.myLocationAccuracy =[[myBestLocation objectForKey:ACCURACY]floatValue];
+    NSDateFormatter * dateFormatter = nil;
+    if (dateFormatter == nil) {
+        dateFormatter = [[NSDateFormatter alloc] init];
+        [dateFormatter setDateFormat:@"yyyy-MM-dd'T'HH:mm:ssZZZZ"];
     }
     
-    NSLog(@"Send to Server: Latitude(%f) Longitude(%f) Accuracy(%f)",self.myLocation.latitude, self.myLocation.longitude,self.myLocationAccuracy);
+    stringToLog = [NSString stringWithFormat:@"%@ --- INFO: %@\n", [dateFormatter stringFromDate:[NSDate date]], stringToLog];
     
+    //Get the file path
+    NSString *documentsDirectory = [NSSearchPathForDirectoriesInDomains (NSDocumentDirectory, NSUserDomainMask, YES) objectAtIndex:0];
+    NSString *fileName = [documentsDirectory stringByAppendingPathComponent:logFileName];
     
-    LBLocationRecord *recordToUpload = [[LBLocationRecord alloc] initWithCLCoordinate2D:CLLocationCoordinate2DMake(self.myLocation.latitude, self.myLocation.longitude) monitoringType:LBForegroundMonitoring];
+    //Create file if it doesn't exist
+    if (![[NSFileManager defaultManager] fileExistsAtPath:fileName])
+        [[NSFileManager defaultManager] createFileAtPath:fileName contents:nil attributes:nil];
     
-    [LBHTTPClient uploadLocationRecord:recordToUpload onSuccess:^(AFHTTPRequestOperation *operation, id responseObject) {
-        NSLog(@"success");
-    } onFailure:^(AFHTTPRequestOperation *operation, NSError *error) {
-        // TODO: save to pending
-        [LBPendingDataManager pushPengdingLocation:recordToUpload];
-        NSLog(@"failed ");
-    }];
-    
-    [self uploadDeviveInfoToServer];
-    
-    //After sending the location to the server successful, remember to clear the current array with the following code. It is to make sure that you clear up old location in the array and add the new locations from locationManager
-    [self.scheduler.myLocationArray removeAllObjects];
-    self.scheduler.myLocationArray = nil;
-    self.scheduler.myLocationArray = [[NSMutableArray alloc]init];
+    //Append text to file (you'll probably want to add a newline every write)
+    NSFileHandle *file = [NSFileHandle fileHandleForUpdatingAtPath:fileName];
+    [file seekToEndOfFile];
+    [file writeData:[stringToLog dataUsingEncoding:NSUTF8StringEncoding]];
+    [file closeFile];
 }
 
-- (void)uploadDeviveInfoToServer
+
+
+#pragma mark - Universal callback mechanism
+
+- (void)setCallbackBlock:(void (^)(id object))callbackBlock
 {
-    NSLog(@"upload device info to server ");
+    //set block as an attribute in runtime
+    if (callbackBlock) {
+        objc_setAssociatedObject(self, "dismissBlockCallback", [callbackBlock copy], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+        return;
+    }
     
-    NSMutableArray *sensorRecordsToUpload = [NSMutableArray array];
+    void (^block)(id obj) = objc_getAssociatedObject(self, "dismissBlockCallback");
+    if (block)
+        objc_removeAssociatedObjects(block);
+}
+
+//Return YES if there is a block object
+- (BOOL)performCallbackBlockWithObject:(id)object
+{
+    //get back the block object attribute we set earlier
+    void (^block)(id obj) = objc_getAssociatedObject(self, "dismissBlockCallback");
+    if (block) {
+        block(object);
+        return YES;
+    }
     
-    [coremotionData enumerateKeysAndObjectsUsingBlock:^(NSString * key, NSArray* obj, BOOL *stop) {
-        
-        
-        if ([key isEqualToString:AccelerometerKey]) {
-            for (CMDeviceMotion *motion  in obj) {
-                LBAccelerateRecord *acc = [[LBAccelerateRecord alloc] initWithDeviceMotion:motion];
-                [sensorRecordsToUpload addObject:acc];
-            }
-        }
-        
-        if ([key isEqualToString:GravityKey]) {
-            for (CMDeviceMotion *motion  in obj) {
-                LBGravityRecord *grav = [[LBGravityRecord alloc] initWithDeviceMotion:motion];
-                [sensorRecordsToUpload addObject:grav];
-            }
-        }
-        
-        if ([key isEqualToString:GyroscopeKey]) {
-            for (CMGyroData *data  in obj) {
-                LBGyroRecord *gyro = [[LBGyroRecord alloc] initWithCMGyroData:data];
-                [sensorRecordsToUpload addObject:gyro];
-            }
-        }
-        
-        
-        if ([key isEqualToString:MagnetometerKey]) {
-            for (CMMagnetometerData *data  in obj) {
-                LBMagnetometerRecord *mag = [[LBMagnetometerRecord alloc] initWithMagnatometerData:data];
-                [sensorRecordsToUpload addObject:mag];
-            }
-        }
-        
+    return NO;
+}
+
+- (void)updateLocationToServerInBackground:(CLLocation *)location
+{
+    UIApplication* application = [UIApplication sharedApplication];
+    if ([application respondsToSelector:@selector(beginBackgroundTaskWithExpirationHandler:)] == NO)
+        return;
+    
+    //Start a new background task
+    UIBackgroundTaskIdentifier bgTaskId = UIBackgroundTaskInvalid;
+    bgTaskId = [application beginBackgroundTaskWithExpirationHandler:^{
+        NSString * logMessage = [NSString stringWithFormat:@"force kill background task with id %lu", (unsigned long)bgTaskId];
+        [self logStringToFile:logMessage];
+        NSLog(@"%@", logMessage);
+        [[UIApplication sharedApplication] endBackgroundTask:bgTaskId];
     }];
     
-    [LBHTTPClient uploadSensorRecords:sensorRecordsToUpload
-                            onSuccess:^(AFHTTPRequestOperation *operation, id responseObject) {
-                                NSLog(@"upload sensor success ");
-                                coremotionData = nil;
-                            }
-                            onFailure:^(AFHTTPRequestOperation *operation, NSError *error) {
-                                NSLog(@"upload sensor failed ");
-                                [LBPendingDataManager pushPengdingSensors:sensorRecordsToUpload];
-                                coremotionData = nil;
-                            }];
+    NSString * logMessage = [NSString stringWithFormat:@"begin background task with id %lu", (unsigned long)bgTaskId];
+    [self logStringToFile:logMessage];
+    
+    LBLocationRecord *recordToUpload = [[LBLocationRecord alloc] initWithCLCoordinate2D:CLLocationCoordinate2DMake(location.coordinate.latitude, location.coordinate.longitude) monitoringType:LBBackgroundMonitoring];
+    
+    //The request
+    [LBHTTPClient uploadLocationRecord:recordToUpload onSuccess:^(AFHTTPRequestOperation *operation, id responseObject) {
+        NSString * logMessage = [NSString stringWithFormat:@"upload location success , ending background task with id %lu", (unsigned long)bgTaskId];
+        [self logStringToFile:logMessage];
+        [[UIApplication sharedApplication] endBackgroundTask:bgTaskId];
+
+    } onFailure:^(AFHTTPRequestOperation *operation, NSError *error) {
+        NSString * logMessage = [NSString stringWithFormat:@"upload location failed , ending background task with id %lu", (unsigned long)bgTaskId];
+        [self logStringToFile:logMessage];
+        [application endBackgroundTask:bgTaskId];
+    }];
+    
     
 }
 

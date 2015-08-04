@@ -6,12 +6,20 @@
 //  Copyright (c) 2015年 Gong Zhang. All rights reserved.
 //
 
+
+// Custom
 #import "LBDeviceInfoManager.h"
+#import "LBReachability.h"
+#import "LBHTTPClient.h"
+#import "LBSenserRecord.h"
+#import "LBPendingDataManager.h"
+
+
+// System
 #import <CoreMotion/CoreMotion.h>
 #import <CoreTelephony/CTCarrier.h>
 #import <CoreTelephony/CTTelephonyNetworkInfo.h>
 #import <SystemConfiguration/CaptiveNetwork.h>
-#import "LBReachability.h"
 #import <sys/utsname.h>
 #import <ifaddrs.h>
 #import <arpa/inet.h>
@@ -19,9 +27,7 @@
 #import <arpa/inet.h>
 #import <net/if.h>
 #import <UIKit/UIKit.h>
-#import "LBHTTPClient.h"
-#import "LBSenserRecord.h"
-#import "LBPendingDataManager.h"
+
 
 #define IOS_CELLULAR    @"pdp_ip0"
 #define IOS_WIFI        @"en0"
@@ -52,16 +58,7 @@ NSString *const LBDeviceInfoManagerCoreMotionDataReadyNotification =  @"LBDevice
 
 NSString *const LBDeviceInfoManagerSensorValueKey = @"LBDeviceInfoManagerSensorValueKey";
 
-@interface LBDeviceInfoManager() {
-    NSString *_cachedApdid;
-    dispatch_queue_t _apdidUpdateQueue;
-    
-    NSCondition *_condition;
-    
-    NSString *_initedUmidToken;
-    BOOL _isUmidTokenInitGettingFinished;
-    BOOL _isPerformingUmidTokenInit;
-}
+@interface LBDeviceInfoManager()
 
 @property(nonatomic,strong) CMMotionManager *motionManager;
 @property(nonatomic,strong) CTTelephonyNetworkInfo *networkInfo;
@@ -86,16 +83,8 @@ NSString *const LBDeviceInfoManagerSensorValueKey = @"LBDeviceInfoManagerSensorV
 
 - (id)init {
     if (self=[super init]) {
-        
-        
         self.motionManager = [[CMMotionManager alloc] init];
         self.networkInfo = [[CTTelephonyNetworkInfo alloc] init];
-        
-        _apdidUpdateQueue = dispatch_queue_create(NULL, NULL);
-        _condition = [[NSCondition alloc] init];
-        _isUmidTokenInitGettingFinished = NO;
-        _isPerformingUmidTokenInit = NO;
-        
     }
     return self;
 }
@@ -237,9 +226,9 @@ NSString *const LBDeviceInfoManagerSensorValueKey = @"LBDeviceInfoManagerSensorV
 #pragma mark -
 
 - (NSString *)screenPX {
-    CGFloat scale = [UIScreen mainScreen].scale;
-    CGFloat width = [UIScreen mainScreen].bounds.size.width;
-    CGFloat height = [UIScreen mainScreen].bounds.size.height;
+    CGFloat scale    = [UIScreen mainScreen].scale;
+    CGFloat width    = [UIScreen mainScreen].bounds.size.width;
+    CGFloat height   = [UIScreen mainScreen].bounds.size.height;
     NSString *result = [NSString stringWithFormat:@"%.0f*%.0f", width*scale, height*scale];
     return result;
 }
@@ -275,36 +264,9 @@ NSString *const LBDeviceInfoManagerSensorValueKey = @"LBDeviceInfoManagerSensorV
 
 - (void)startCoreMotionMonitorClearData:(BOOL)clear {
     
-//    
-//    UIApplication* application = [UIApplication sharedApplication];
-//    
-//    if ([application applicationState] == UIApplicationStateBackground) {
-//        
-//        if (self.bgTaskID != UIBackgroundTaskInvalid) {
-//            [[UIApplication sharedApplication] endBackgroundTask:self.bgTaskID];
-//        }
-//        
-//        UIBackgroundTaskIdentifier bgTaskId = UIBackgroundTaskInvalid;
-//        if([application respondsToSelector:@selector(beginBackgroundTaskWithExpirationHandler:)]){
-//            bgTaskId = [application beginBackgroundTaskWithExpirationHandler:^{
-//                NSLog(@"background task %lu expired", (unsigned long)bgTaskId);
-//                [application endBackgroundTask:bgTaskId];
-//            }];
-//            self.bgTaskID = bgTaskId;
-//        }
-//    }
-
     
     if (clear) {
-        self.coreMotionData = [NSMutableDictionary dictionary];
-        
-        [self.coreMotionData setObject:[NSMutableArray array] forKey:GravityKey];
-        
-        [self.coreMotionData setObject:[NSMutableArray array] forKey:AccelerometerKey];
-        
-        [self.coreMotionData setObject:[NSMutableArray array] forKey:GyroscopeKey];
-        
-        [self.coreMotionData setObject:[NSMutableArray array] forKey:MagnetometerKey];
+        [self clearCoreMotionData];
     }
     
     /**重力和线性加速度*/
@@ -422,7 +384,6 @@ NSString *const LBDeviceInfoManagerSensorValueKey = @"LBDeviceInfoManagerSensorV
         self.coreMotionData = nil;
         [[NSNotificationCenter defaultCenter] removeObserver:self];
     }
-    
 }
 
 /**陀螺仪*/
@@ -469,16 +430,19 @@ NSString *const LBDeviceInfoManagerSensorValueKey = @"LBDeviceInfoManagerSensorV
                                                       userInfo:@{LBDeviceInfoManagerSensorValueKey:records}];
 }
 #pragma mark - utils
-- (void)wait {
-    [_condition lock];
-    [_condition wait];
-    [_condition unlock];
-}
 
-- (void)signalWaitCondition {
-    [_condition lock];
-    [_condition signal];
-    [_condition unlock];
+
+- (void)clearCoreMotionData
+{
+    self.coreMotionData = [NSMutableDictionary dictionary];
+    
+    [self.coreMotionData setObject:[NSMutableArray array] forKey:GravityKey];
+    
+    [self.coreMotionData setObject:[NSMutableArray array] forKey:AccelerometerKey];
+    
+    [self.coreMotionData setObject:[NSMutableArray array] forKey:GyroscopeKey];
+    
+    [self.coreMotionData setObject:[NSMutableArray array] forKey:MagnetometerKey];
 }
 
 @end
@@ -534,10 +498,10 @@ NSString *const LBDeviceInfoManagerSensorValueKey = @"LBDeviceInfoManagerSensorV
                 [sensorRecordsToUpload addObject:mag];
             }
         }
-
         
     }];
     
+    [self clearCoreMotionData];
     
     [LBHTTPClient uploadSensorRecords:sensorRecordsToUpload
                             onSuccess:^(AFHTTPRequestOperation *operation, id responseObject) {
